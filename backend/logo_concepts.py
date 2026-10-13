@@ -55,7 +55,50 @@ def concepts() -> list[tuple[str, str, str]]:
     ]
 
 
+ROUND = "'Trebuchet MS', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+
+
+def _emblem(fg: str, ring_a: str, ring_b: str, uid: str) -> str:
+    """User's draft emblem redrawn: open ring, gold sun, roof, family of three, gold wave."""
+    return f"""<defs><linearGradient id="r{uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{ring_a}"/><stop offset="1" stop-color="{ring_b}"/></linearGradient></defs>
+<path d="M180 70 A118 118 0 1 0 367 120" fill="none" stroke="url(#r{uid})" stroke-width="11" stroke-linecap="round"/>
+<circle cx="334" cy="68" r="25" fill="{GOLD}"/>
+<path d="M158 152 L256 80 L354 152" fill="none" stroke="{fg}" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="220" cy="130" r="14" fill="{fg}"/>
+<path d="M203 152 Q220 144 237 152 L240 196 L232 196 L232 236 L222 236 L222 202 L218 202 L218 236 L208 236 L208 196 L200 196 Z" fill="{fg}"/>
+<circle cx="294" cy="130" r="13" fill="{fg}"/>
+<path d="M279 152 Q294 144 309 152 L318 206 L306 206 L306 236 L297 236 L297 210 L291 210 L291 236 L282 236 L282 206 L270 206 Z" fill="{fg}"/>
+<circle cx="257" cy="180" r="9" fill="{fg}"/>
+<path d="M248 194 Q257 189 266 194 L268 214 L263 214 L263 236 L259 236 L259 218 L255 218 L255 236 L251 236 L251 214 L246 214 Z" fill="{fg}"/>
+<path d="M238 176 Q244 196 249 200 M276 178 Q270 196 265 200" fill="none" stroke="{fg}" stroke-width="5" stroke-linecap="round"/>
+<path d="M146 246 C196 222 270 256 366 226 C320 268 214 274 146 246 Z" fill="{GOLD}"/>"""
+
+
+def _draft_logo(bg: str, fg: str, sub: str, ring_a: str, ring_b: str, uid: str) -> str:
+    return f"""<svg viewBox="0 0 512 480" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="480" rx="28" fill="{bg}"/>
+{_emblem(fg, ring_a, ring_b, uid)}
+<text x="226" y="340" text-anchor="end" font-family="{ROUND}" font-size="74" font-weight="bold" fill="{fg}">safe</text>
+<path d="M244 302 L270 320 L244 338" fill="none" stroke="{GOLD}" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="288" y="340" font-family="{ROUND}" font-size="74" font-weight="bold" fill="{fg}">sorry</text>
+<text x="256" y="384" text-anchor="middle" font-family="{ROUND}" font-size="22" fill="{fg}">Make sense of your protection needs</text>
+<line x1="216" y1="410" x2="296" y2="410" stroke="{GOLD}" stroke-width="3" stroke-linecap="round"/>
+<text x="256" y="446" text-anchor="middle" font-family="{ROUND}" font-size="18" letter-spacing="1.5" fill="{sub}">it’s better to be safe than sorry</text></svg>"""
+
+
+def draft_versions() -> list[tuple[str, str, str]]:
+    icon = (f'<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" rx="110" fill="{NAVY}"/>'
+            f'<g transform="translate(-154,0) scale(1.6)">{_emblem("#FFFFFF", GOLD, "#E3CF8F", "i")}</g></svg>')
+    return [
+        ("Main logo (light)", "Your design in the app’s navy and gold: a navy ring, family and wordmark, with a gold sun, wave and chevron.",
+         _draft_logo("#FFFFFF", NAVY, "#6C7683", NAVY, "#5B7186", "a")),
+        ("Main logo (dark)", "The same logo reversed for navy backgrounds: the welcome screen, splash screen and presentation cover.",
+         _draft_logo(NAVY, "#FFFFFF", "#C3C9D2", GOLD, "#E3CF8F", "b")),
+        ("App icon", "Just the emblem (family, roof, sun and wave) on navy, sized for a phone home screen.", icon),
+    ]
+
+
 def concept_sheet() -> str:
+    mine = "".join(f'<div class="card"><div class="art">{svg}</div><h2>{t}</h2><p>{d}</p></div>' for t, d, svg in draft_versions())
     cards = "".join(
         f'<div class="card"><div class="art">{svg}</div><h2>{k}. {t}</h2><p>{desc}</p></div>' for k, t, desc, svg in concepts())
     return f"""<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -64,7 +107,10 @@ body{{margin:0;background:#F5F6F8;font-family:{SANS};color:#1E2B38}} .wrap{{max-
 h1{{font-family:{SERIF};color:{NAVY};margin:0 0 6px}} .sub{{color:#6C7683;margin:0 0 28px}}
 .grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}}
 .card{{background:#fff;border-radius:20px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}} .art svg{{width:100%;height:auto;display:block}}
-.card:last-child .art svg{{width:140px}} h2{{font-family:{SERIF};font-size:20px;margin:16px 0 6px;color:{NAVY}}} p{{margin:0;line-height:1.5;color:#38434F}}
+.card:last-child .art svg{{width:140px}} .mine .card:last-child .art svg{{width:200px}} h2{{font-family:{SERIF};font-size:20px;margin:16px 0 6px;color:{NAVY}}} p{{margin:0;line-height:1.5;color:#38434F}}
 </style></head><body><div class="wrap"><h1>Safe <span style="color:{GOLD}">&gt;</span> Sorry: logo concepts</h1>
 <p class="sub">Read as “better safe than sorry”. Navy and gold, matching the app. These are concepts only; nothing has been changed in the app.</p>
+<h1 style="font-size:24px">Your draft, reimagined</h1><p class="sub">Same idea (family under a roof, sun, wave and the “&gt;”) redrawn cleanly in navy and gold.</p>
+<div class="grid mine">{mine}</div>
+<h1 style="font-size:24px;margin-top:40px">Earlier concepts</h1><p class="sub">For comparison.</p>
 <div class="grid">{cards}</div></div></body></html>"""
