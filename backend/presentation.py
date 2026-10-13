@@ -12,7 +12,7 @@ def build_presentation(*, app_name: str, adviser: dict) -> str:
     photo = f'<img class="ph" src="{e(adviser["photo_url"])}" alt="{name}">' if adviser.get("photo_url", "").startswith("https://") else ""
     app = e(app_name)
     slides = [
-        f"""<div class="cover"><div class="brand">{app.upper()}</div>
+        f"""<div class="cover"><img src="/api/static/logos/logo_full_cropped.png" alt="{app}" style="width:150px;background:#fff;border-radius:18px;padding:10px">
 <h1>Helping families see what's really at stake, and opening better protection conversations</h1>
 <div class="who">{photo}<div><b>{name}</b><br>{e(adviser.get("title", ""))}<br>{firm}</div></div></div>""",
 

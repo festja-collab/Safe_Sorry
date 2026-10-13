@@ -25,9 +25,9 @@ export default function Onboarding() {
       />
       <LinearGradient colors={[colors.surfaceInverse, colors.scrim]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 96, opacity: 0.6 }} />
       <View style={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.xl }}>
-        <Txt variant="title" color={colors.onSurfaceInverse} testID="onboarding-logo">
-          Safe {">"} Sorry
-        </Txt>
+        <View style={{ alignSelf: "flex-start", backgroundColor: colors.surface, borderRadius: 16, padding: spacing.sm }}>
+          <Image source={require("../assets/images/logo-full.png")} style={{ width: 92, height: 97 }} contentFit="contain" accessibilityLabel="Safe > Sorry" testID="onboarding-logo" />
+        </View>
       </View>
       <View style={{ flex: 1 }} />
       <View style={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + spacing.xl, gap: spacing.lg }}>
