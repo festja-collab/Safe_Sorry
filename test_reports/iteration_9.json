@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 9 verifies the QR-clipping fix on /api/try at viewports 390x844, 375x667 and 1280x800, AND decodes a screenshot of the actually-rendered on-screen QR element (not the raw SVG source as in iteration 8). Backend pytest /app/backend/tests/test_try_qr.py: 9/9 pass in 0.95s (JUnit /app/test_reports/pytest/iteration9.xml) - page returns 200 HTML, logo image loads 200 (image/*), 'Or open it here' href is exactly 'https://protect-me-17.preview.emergentagent.com/', no exp:// anywhere, and raw inline SVG decodes to that URL via cairosvg+pyzbar. Browser rendering checks (Playwright, mobile viewports): at 390x844 the #qr svg bounding box is 260x260 at (65, 402.5) inside a 284x284 .qr card at (53, 390.5) - fits_in_card=True, fits_in_viewport=True; at 375x667 svg 260x260 at (57.5, 402.5), card 284x284 at (45.5, 390.5) - also fits; at 1280x800 svg 260x260 at (510, 402.5), card 284x284 at (498, 390.5) - also fits. All four finder patterns and the 4-module white quiet zone are fully visible on every viewport. Element-level screenshots of just the <svg> (saved to /app/test_reports/screens/qr_iphone390.png, qr_iphone375.png, qr_desktop.png) all decode via pyzbar to exactly 'https://protect-me-17.preview.emergentagent.com/' - matching the required value character-for-character. The Safe>Sorry logo and gold 'Or open it here' link are present on every viewport. The clipping bug reported by the user is fixed: the QR is no longer cut off on phone screens and decodes to the correct https URL.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_try_qr.py",
+    "/app/test_reports/pytest/iteration9.xml",
+    "/app/test_reports/screens/qr_iphone390.png",
+    "/app/test_reports/screens/qr_iphone375.png",
+    "/app/test_reports/screens/qr_desktop.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "try_page.py:9 segno.make(url, error='m').svg_inline(omitsize=True, border=4) - correct: omitsize removes fixed width/height so the SVG uses only viewBox and scales freely under the CSS width:min(260px,70vw);height:auto rule. Border=4 modules preserves the standard QR quiet zone.",
+    "try_page.py:14 .qr svg { width:min(260px,70vw); height:auto; } - solid fluid-sizing fix for the clipping bug. On 375px-wide iPhone SE, 70vw = 262.5px capped to 260px; svg stays inside the 20px wrap padding on each side. shape-rendering:crispEdges keeps modules sharp when scaled.",
+    "iteration-7 open items (server.py >1000 lines, DuplicateKeyError race in /api/firms/register) still stand but unrelated to this iteration's scope."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (9/9 iteration-9 pytest)",
+    "frontend": "100% (3/3 viewports: QR fits inside card+viewport AND on-screen screenshot decodes to https://protect-me-17.preview.emergentagent.com/; logo and 'Or open it here' link visible on all three)"
+  },
+  "seed_data_creation": "None - all tested endpoints are public.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "To re-verify on-screen (not raw-SVG) QR rendering: open /api/try in Playwright at the target viewport, wait for '#qr svg', call element.bounding_box() to confirm it fits inside '#qr' and the viewport, then element.screenshot(path=...). Decode with `from pyzbar.pyzbar import decode; decode(PIL.Image.open(path).convert('L'))` - at 260x260 pixels pyzbar decodes without any upscaling. opencv-python-headless is installed as a secondary decoder. The existing backend pytest (/app/backend/tests/test_try_qr.py) still only decodes the raw inline SVG via cairosvg - fine for round-tripping the payload but it does NOT catch CSS clipping. Consider adding a Playwright-based pytest in a future iteration if clipping-style regressions become common. Dependencies in use: pyzbar (needs libzbar0 apt pkg), cairosvg, Pillow, opencv-python-headless. All iteration-7/8 regression paths (invite/presentation/logo-concepts) still 200."
+}
