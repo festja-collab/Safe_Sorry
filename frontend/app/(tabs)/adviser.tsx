@@ -16,7 +16,16 @@ import { makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
 type Config = {
   calendly_url: string;
-  adviser: { name: string; bio: string; photo_url: string; phone: string; firm_name: string; fca_number: string };
+  adviser: {
+    name: string;
+    bio: string;
+    photo_url: string;
+    phone: string;
+    firm_name: string;
+    fca_number: string;
+    principal_name: string;
+    principal_fca_number: string;
+  };
 };
 const TIMES = ["Mornings", "Afternoons", "Evenings", "Weekends", "Any time"];
 
@@ -64,7 +73,19 @@ export default function Adviser() {
       </View>
       <KeyboardAwareScrollView bottomOffset={24} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: bottomChrome + spacing.xl, gap: spacing.xl }}>
         <View style={s.intro}>
-          <Image source={adviser ? { uri: adviser.photo_url } : undefined} style={s.portrait} contentFit="cover" transition={300} testID="adviser-photo" />
+          {adviser?.photo_url ? (
+            <Image source={{ uri: adviser.photo_url }} style={s.portrait} contentFit="cover" transition={300} testID="adviser-photo" />
+          ) : (
+            <View style={[s.portrait, s.monogram]} testID="adviser-photo">
+              <Txt variant="display" color={colors.onBrandTertiary}>
+                {(adviser?.name ?? "")
+                  .split(" ")
+                  .map((w) => w[0])
+                  .join("")
+                  .slice(0, 2)}
+              </Txt>
+            </View>
+          )}
           <View style={{ flex: 1, gap: spacing.xs }}>
             <Txt variant="title" testID="adviser-name">
               {adviser ? `Hi, I’m ${first}.` : " "}
@@ -77,7 +98,7 @@ export default function Adviser() {
         <Txt variant="display">Let’s close the gap together.</Txt>
         <Txt>
           Fifteen minutes on the phone is often all it takes. I’ll look at your story, find the cover that fits your
-          budget, and help you write it in trust.
+          budget, and help you put it in trust. As a dad myself, I know exactly why this matters.
         </Txt>
 
         <Button
@@ -148,7 +169,8 @@ export default function Adviser() {
         )}
         {adviser ? (
           <Txt variant="small" style={{ textAlign: "center" }} testID="adviser-firm-info">
-            {adviser.firm_name} is authorised and regulated by the Financial Conduct Authority. FCA No. {adviser.fca_number}.
+            {adviser.firm_name} (FRN {adviser.fca_number}) is an Appointed Representative of {adviser.principal_name}, which is
+            authorised and regulated by the Financial Conduct Authority (FRN {adviser.principal_fca_number}).
           </Txt>
         ) : null}
       </KeyboardAwareScrollView>
@@ -161,6 +183,7 @@ const useStyles = makeStyles((c) => ({
   header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md, backgroundColor: c.surface },
   intro: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
   portrait: { width: 88, height: 88, borderRadius: radius.lg, backgroundColor: c.surfaceTertiary },
+  monogram: { backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
   form: { backgroundColor: c.surfaceSecondary, borderRadius: radius.lg, padding: spacing.xl, gap: spacing.lg },
   chip: { height: 36, flexShrink: 0, paddingHorizontal: spacing.lg, borderRadius: radius.pill, backgroundColor: c.surfaceTertiary, justifyContent: "center" },
   chipOn: { backgroundColor: c.surfaceInverse },

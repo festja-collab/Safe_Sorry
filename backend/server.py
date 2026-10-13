@@ -176,6 +176,8 @@ async def config():
             "phone": os.environ["ADVISER_PHONE"],
             "firm_name": os.environ["FIRM_NAME"],
             "fca_number": os.environ["FCA_NUMBER"],
+            "principal_name": os.environ["PRINCIPAL_NAME"],
+            "principal_fca_number": os.environ["PRINCIPAL_FCA_NUMBER"],
         },
     }
 

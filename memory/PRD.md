@@ -31,3 +31,9 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Adviser name, bio, photo URL, phone, firm name, FCA number, adviser email and Calendly link all come from backend/.env (ADVISER_NAME, ADVISER_BIO, ADVISER_PHOTO_URL, ADVISER_PHONE, FIRM_NAME, FCA_NUMBER, ADVISER_EMAIL, CALENDLY_URL) via GET /api/config
 - Adviser tab: tap-to-call button, FCA disclosure footer
 - Real values still pending from user (placeholders in place)
+
+## Update (Oct 2026) — Real adviser details
+- Adviser: Mark Turner, Senior Protection Specialist, SFL Wealth Management Ltd (FRN 912517), AR of Rosemount Financial Solutions (IFA) Limited (FRN 535515)
+- Leads → mark.turner@sflwealth.co.uk; Calendly https://calendly.com/mark-turner-sflw; phone 01792 735 453; photo from sflwealth.co.uk team page
+- AR disclosure footer on Adviser tab
+- Pending: firm compliance sign-off before publishing
