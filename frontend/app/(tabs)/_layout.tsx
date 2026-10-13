@@ -10,6 +10,7 @@ import { colors, fonts } from "@/src/theme";
 export default function TabsLayout() {
   const { user, loading } = useAuth();
   if (!loading && !user) return <Redirect href="/onboarding" />;
+  const isAdviser = user?.role === "adviser";
 
   if (usesNativeTabs) {
     return (
@@ -18,11 +19,15 @@ export default function TabsLayout() {
           <NativeTabs.Trigger.Icon sf="house.fill" />
           <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="leads" hidden={!isAdviser}>
+          <NativeTabs.Trigger.Icon sf="tray.full.fill" />
+          <NativeTabs.Trigger.Label>Leads</NativeTabs.Trigger.Label>
+        </NativeTabs.Trigger>
         <NativeTabs.Trigger name="learn">
           <NativeTabs.Trigger.Icon sf="book.fill" />
           <NativeTabs.Trigger.Label>Learn</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="adviser">
+        <NativeTabs.Trigger name="adviser" hidden={isAdviser}>
           <NativeTabs.Trigger.Icon sf="bubble.left.and.bubble.right.fill" />
           <NativeTabs.Trigger.Label>Adviser</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
@@ -55,8 +60,9 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: icon("home"), tabBarButtonTestID: "tab-home" } as any} />
+      <Tabs.Screen name="leads" options={{ title: "Leads", tabBarIcon: icon("inbox"), tabBarButtonTestID: "tab-leads", href: isAdviser ? undefined : null } as any} />
       <Tabs.Screen name="learn" options={{ title: "Learn", tabBarIcon: icon("book-open"), tabBarButtonTestID: "tab-learn" } as any} />
-      <Tabs.Screen name="adviser" options={{ title: "Adviser", tabBarIcon: icon("message-circle"), tabBarButtonTestID: "tab-adviser" } as any} />
+      <Tabs.Screen name="adviser" options={{ title: "Adviser", tabBarIcon: icon("message-circle"), tabBarButtonTestID: "tab-adviser", href: isAdviser ? null : undefined } as any} />
       <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: icon("user"), tabBarButtonTestID: "tab-profile" } as any} />
     </Tabs>
   );

@@ -25,6 +25,7 @@ from calc import compute  # noqa: E402
 from articles import ARTICLES  # noqa: E402
 from emailer import send_email  # noqa: E402
 from compliance_pack import build_pack  # noqa: E402
+from invite import invite_page  # noqa: E402
 from fastapi.responses import HTMLResponse  # noqa: E402
 import limiter  # noqa: E402
 from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone  # noqa: E402
@@ -66,12 +67,34 @@ class User(BaseDocument):
     name: str
     password_hash: str
     created_at: str
+    role: str = "client"                 # "client" | "adviser"
+    adviser_id: Optional[str] = None     # clients: linked adviser
+    firm_id: Optional[str] = None
+    is_firm_admin: bool = False
+    # Adviser profile (advisers only)
+    title: str = ""
+    bio: str = ""
+    photo_url: str = ""
+    phone: str = ""
+    calendly_url: str = ""
+    lead_email: str = ""
+    adviser_code: Optional[str] = None
+
+
+class Firm(BaseDocument):
+    code: str
+    name: str
+    fca_number: str = ""
+    principal_name: str = ""
+    principal_fca_number: str = ""
+    created_at: str
 
 
 class RegisterIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     email: EmailStr
     password: str = Field(min_length=10, max_length=128)
+    adviser_code: str = Field(default="", max_length=40)
 
 
 class LoginIn(BaseModel):
@@ -132,6 +155,9 @@ class Lead(BaseDocument):
     preferred_time: str
     message: str
     assessment_id: Optional[str] = None
+    adviser_id: Optional[str] = None
+    firm_id: Optional[str] = None
+    status: str = "new"                  # new | contacted | closed
     email_sent: bool = False
     created_at: str
 
@@ -157,7 +183,8 @@ def make_token(user_id: str) -> str:
 
 
 def public_user(u: User) -> dict:
-    return {"id": u.id, "email": u.email, "name": u.name}
+    return {"id": u.id, "email": u.email, "name": u.name, "role": u.role, "is_firm_admin": u.is_firm_admin,
+            "adviser_code": u.adviser_code if u.role == "adviser" else None}
 
 
 async def current_user(c: HTTPAuthorizationCredentials = Depends(bearer)) -> User:
@@ -180,20 +207,44 @@ async def root():
 
 @api.get("/config")
 async def config():
+    return {"app_name": APP_NAME}
+
+
+# ---------------- Firms & advisers ----------------
+async def find_adviser_by_code(code: str) -> Optional[User]:
+    doc = await db.users.find_one({"adviser_code": code.strip().upper(), "role": "adviser"})
+    return User.from_mongo(doc) if doc else None
+
+
+async def default_adviser() -> User:
+    doc = await db.users.find_one({"email": os.environ["DEFAULT_ADVISER_EMAIL"].lower(), "role": "adviser"})
+    return User.from_mongo(doc)
+
+
+async def adviser_for(user: User) -> User:
+    if user.role == "adviser":
+        return user
+    if user.adviser_id:
+        doc = await db.users.find_one({"_id": ObjectId(user.adviser_id), "role": "adviser"})
+        if doc:
+            return User.from_mongo(doc)
+    return await default_adviser()
+
+
+async def get_firm(firm_id: Optional[str]) -> Optional[Firm]:
+    doc = await db.firms.find_one({"_id": ObjectId(firm_id)}) if firm_id else None
+    return Firm.from_mongo(doc) if doc else None
+
+
+async def adviser_profile(a: User) -> dict:
+    f = await get_firm(a.firm_id)
     return {
-        "calendly_url": CALENDLY_URL,
-        "app_name": APP_NAME,
-        "adviser": {
-            "name": os.environ["ADVISER_NAME"],
-            "bio": os.environ["ADVISER_BIO"],
-            "photo_url": os.environ["ADVISER_PHOTO_URL"],
-            "phone": os.environ["ADVISER_PHONE"],
-            "firm_name": os.environ["FIRM_NAME"],
-            "fca_number": os.environ["FCA_NUMBER"],
-            "principal_name": os.environ["PRINCIPAL_NAME"],
-            "principal_fca_number": os.environ["PRINCIPAL_FCA_NUMBER"],
-        },
+        "id": a.id, "name": a.name, "title": a.title, "bio": a.bio, "photo_url": a.photo_url, "phone": a.phone,
+        "calendly_url": a.calendly_url, "email": a.lead_email or a.email, "adviser_code": a.adviser_code,
+        "firm_name": f.name if f else "", "fca_number": f.fca_number if f else "",
+        "principal_name": f.principal_name if f else "", "principal_fca_number": f.principal_fca_number if f else "",
     }
+
 
 
 @api.post("/auth/register")
@@ -203,8 +254,15 @@ async def register(body: RegisterIn, request: Request):
     email = body.email.lower()
     if await db.users.find_one({"email": email}):
         raise HTTPException(409, "An account with this email already exists")
+    if body.adviser_code.strip():
+        adviser = await find_adviser_by_code(body.adviser_code)
+        if not adviser:
+            raise HTTPException(400, "We couldn't find that adviser code. Please check it or leave it blank.")
+    else:
+        adviser = await default_adviser()
     pw = bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode()
-    user = User(email=email, name=body.name.strip(), password_hash=pw, created_at=now_iso())
+    user = User(email=email, name=body.name.strip(), password_hash=pw, created_at=now_iso(),
+                adviser_id=adviser.id, firm_id=adviser.firm_id)
     res = await db.users.insert_one(user.to_mongo())
     user.id = str(res.inserted_id)
     return {"token": make_token(user.id), "user": public_user(user)}
@@ -278,6 +336,12 @@ async def get_owned(aid: str, user: User) -> Assessment:
 
 @api.get("/assessments/{aid}")
 async def get_assessment(aid: str, user: User = Depends(current_user)):
+    if user.role == "adviser":
+        lead = await db.leads.find_one({"assessment_id": aid, "adviser_id": user.id})
+        doc = await db.assessments.find_one({"_id": ObjectId(aid), "user_id": lead["user_id"]}) if lead else None
+        if not doc:
+            raise HTTPException(404, "Assessment not found")
+        return assessment_out(Assessment.from_mongo(doc))
     return assessment_out(await get_owned(aid, user))
 
 
@@ -370,10 +434,18 @@ async def articles():
 
 @api.get("/compliance-pack", response_class=HTMLResponse)
 async def compliance_pack():
-    adviser = (await config())["adviser"]
-    adviser["email"] = ADVISER_EMAIL
+    adviser = await adviser_profile(await default_adviser())
     return await build_pack(app_name=APP_NAME, adviser=adviser, story_prompt=STORY_SYSTEM,
                             limits={"assess": ASSESSMENTS_PER_DAY, "story": STORIES_PER_DAY, "leads": LEADS_PER_DAY})
+
+
+@api.get("/invite/{code}", response_class=HTMLResponse)
+async def invite_landing(code: str, name: str = ""):
+    adviser = await find_adviser_by_code(code)
+    if not adviser:
+        raise HTTPException(404, "Invite not found")
+    return invite_page(app_name=APP_NAME, adviser=await adviser_profile(adviser), name=name.strip()[:40],
+                       ios_url=os.environ.get("IOS_APP_URL", ""), android_url=os.environ.get("ANDROID_APP_URL", ""))
 
 
 @api.get("/articles/{slug}")
@@ -384,7 +456,7 @@ async def article(slug: str):
     raise HTTPException(404, "Article not found")
 
 
-def lead_email_html(lead: Lead, summary: Optional[dict]) -> str:
+def lead_email_html(lead: Lead, summary: Optional[dict], firm_name: str) -> str:
     rows = [("Name", lead.name), ("Email", lead.email), ("Phone", lead.phone),
             ("Best time", lead.preferred_time or "Any"), ("Message", lead.message or "-")]
     if summary:
@@ -405,7 +477,7 @@ def lead_email_html(lead: Lead, summary: Optional[dict]) -> str:
         '<h2 style="color:#2C2A28;margin:0 0 12px">New adviser request</h2>'
         f'<p style="color:#3A3835">A {escape(APP_NAME)} user would like to talk about protecting their family.</p>'
         f'<table role="presentation" style="border-collapse:collapse">{trs}</table>'
-        f'<p style="font-size:12px;color:#888;margin-top:24px">Sent by {escape(APP_NAME)} for {escape(os.environ["FIRM_NAME"])}.</p>'
+        f'<p style="font-size:12px;color:#888;margin-top:24px">Sent by {escape(APP_NAME)} for {escape(firm_name)}.</p>'
         '</td></tr></table>'
     )
 
@@ -413,21 +485,173 @@ def lead_email_html(lead: Lead, summary: Optional[dict]) -> str:
 @api.post("/leads")
 async def create_lead(body: LeadIn, user: User = Depends(current_user)):
     await limiter.take(db.rate_limits, namespace="lead-user", key=user.id, limit=LEADS_PER_DAY, window=DAY,
-                       message="We've already got your request. Mark will be in touch soon.")
+                       message="We've already got your request. Your adviser will be in touch soon.")
     summary = (await get_owned(body.assessment_id, user)).results if body.assessment_id else None
+    adviser = await adviser_for(user)
+    firm = await get_firm(adviser.firm_id)
     lead = Lead(user_id=user.id, email=user.email, name=body.name.strip(), phone=body.phone.strip(),
                 preferred_time=body.preferred_time, message=body.message, assessment_id=body.assessment_id,
-                created_at=now_iso())
+                adviser_id=adviser.id, firm_id=adviser.firm_id, created_at=now_iso())
     res = await db.leads.insert_one(lead.to_mongo())
     lead.id = str(res.inserted_id)
     try:
-        await send_email(to=ADVISER_EMAIL, subject=f"New {APP_NAME} adviser request: {lead.name}",
-                         html=lead_email_html(lead, summary), reply_to=user.email)
+        await send_email(to=adviser.lead_email or adviser.email, subject=f"New {APP_NAME} adviser request: {lead.name}",
+                         html=lead_email_html(lead, summary, firm.name if firm else APP_NAME), reply_to=user.email)
         await db.leads.update_one({"_id": ObjectId(lead.id)}, {"$set": {"email_sent": True}})
         lead.email_sent = True
     except Exception as e:
         logger.error(f"Lead email failed: {e}")
     return {"id": lead.id, "email_sent": lead.email_sent}
+
+
+@api.get("/my-adviser")
+async def my_adviser(user: User = Depends(current_user)):
+    return await adviser_profile(await adviser_for(user))
+
+
+class LinkAdviserIn(BaseModel):
+    code: str = Field(min_length=2, max_length=40)
+
+
+@api.post("/me/adviser")
+async def link_adviser(body: LinkAdviserIn, user: User = Depends(current_user)):
+    if user.role != "client":
+        raise HTTPException(400, "Adviser accounts can't link to another adviser")
+    adviser = await find_adviser_by_code(body.code)
+    if not adviser:
+        raise HTTPException(404, "We couldn't find that adviser code")
+    await db.users.update_one({"_id": ObjectId(user.id)}, {"$set": {"adviser_id": adviser.id, "firm_id": adviser.firm_id}})
+    return await adviser_profile(adviser)
+
+
+async def adviser_user(user: User = Depends(current_user)) -> User:
+    if user.role != "adviser":
+        raise HTTPException(403, "Adviser access only")
+    return user
+
+
+def lead_out(d: dict) -> dict:
+    lead = Lead.from_mongo(d)
+    return {"id": lead.id, "name": lead.name, "email": lead.email, "phone": lead.phone, "preferred_time": lead.preferred_time,
+            "message": lead.message, "status": lead.status, "created_at": lead.created_at, "assessment_id": lead.assessment_id}
+
+
+@api.get("/adviser/leads")
+async def adviser_leads(status: Optional[str] = None, me: User = Depends(adviser_user)):
+    q = {"adviser_id": me.id}
+    if status in ("new", "contacted", "closed"):
+        q["status"] = status
+    docs = await db.leads.find(q).sort("created_at", -1).to_list(500)
+    ids = [ObjectId(d["assessment_id"]) for d in docs if d.get("assessment_id")]
+    summaries = {}
+    if ids:
+        for a in await db.assessments.find({"_id": {"$in": ids}}).to_list(500):
+            r = a.get("results", {})
+            summaries[str(a["_id"])] = {"headline": r.get("headline"), "protected_pct": r.get("protected_pct"),
+                                        "life_gap": r.get("gaps", {}).get("life", {}).get("gap")}
+    return [{**lead_out(d), "summary": summaries.get(d.get("assessment_id") or "")} for d in docs]
+
+
+async def owned_lead(lid: str, me: User) -> dict:
+    try:
+        d = await db.leads.find_one({"_id": ObjectId(lid), "adviser_id": me.id})
+    except Exception:
+        d = None
+    if not d:
+        raise HTTPException(404, "Lead not found")
+    return d
+
+
+@api.get("/adviser/leads/{lid}")
+async def adviser_lead(lid: str, me: User = Depends(adviser_user)):
+    d = await owned_lead(lid, me)
+    out = lead_out(d)
+    out["assessment"] = None
+    if d.get("assessment_id"):
+        a = await db.assessments.find_one({"_id": ObjectId(d["assessment_id"]), "user_id": d["user_id"]})
+        if a:
+            out["assessment"] = assessment_out(Assessment.from_mongo(a))
+    return out
+
+
+class LeadStatusIn(BaseModel):
+    status: str = Field(pattern="^(new|contacted|closed)$")
+
+
+@api.patch("/adviser/leads/{lid}")
+async def update_lead(lid: str, body: LeadStatusIn, me: User = Depends(adviser_user)):
+    d = await owned_lead(lid, me)
+    await db.leads.update_one({"_id": d["_id"], "adviser_id": me.id}, {"$set": {"status": body.status}})
+    return {"ok": True, "status": body.status}
+
+
+@api.get("/adviser/stats")
+async def adviser_stats(me: User = Depends(adviser_user)):
+    counts = {s: await db.leads.count_documents({"adviser_id": me.id, "status": s}) for s in ("new", "contacted", "closed")}
+    clients = await db.users.count_documents({"adviser_id": me.id, "role": "client"})
+    return {**counts, "total": sum(counts.values()), "clients": clients}
+
+
+class AdviserProfileIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    title: str = Field(default="", max_length=80)
+    bio: str = Field(default="", max_length=300)
+    photo_url: str = Field(default="", max_length=500, pattern=r"^(https://\S+)?$")
+    phone: str = Field(default="", max_length=30)
+    calendly_url: str = Field(default="", max_length=300, pattern=r"^(https://\S+)?$")
+    lead_email: EmailStr
+
+
+@api.get("/adviser/profile")
+async def get_adviser_profile(me: User = Depends(adviser_user)):
+    return await adviser_profile(me)
+
+
+@api.put("/adviser/profile")
+async def put_adviser_profile(body: AdviserProfileIn, me: User = Depends(adviser_user)):
+    data = body.model_dump()
+    data["lead_email"] = str(body.lead_email).lower()
+    await db.users.update_one({"_id": ObjectId(me.id)}, {"$set": data})
+    return await adviser_profile(User.from_mongo(await db.users.find_one({"_id": ObjectId(me.id)})))
+
+
+class FirmIn(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    fca_number: str = Field(default="", max_length=20)
+    principal_name: str = Field(default="", max_length=120)
+    principal_fca_number: str = Field(default="", max_length=20)
+
+
+@api.put("/firm")
+async def put_firm(body: FirmIn, me: User = Depends(adviser_user)):
+    if not me.is_firm_admin or not me.firm_id:
+        raise HTTPException(403, "Only your firm's administrator can change firm details")
+    await db.firms.update_one({"_id": ObjectId(me.firm_id)}, {"$set": body.model_dump()})
+    return await adviser_profile(me)
+
+
+async def seed_default_adviser():
+    """Idempotent: creates SFL + Mark once; never overwrites later edits or a changed password."""
+    await db.firms.update_one({"code": os.environ["FIRM_CODE"]}, {"$setOnInsert": Firm(
+        code=os.environ["FIRM_CODE"], name=os.environ["FIRM_NAME"], fca_number=os.environ["FCA_NUMBER"],
+        principal_name=os.environ["PRINCIPAL_NAME"], principal_fca_number=os.environ["PRINCIPAL_FCA_NUMBER"],
+        created_at=now_iso()).to_mongo()}, upsert=True)
+    firm = await db.firms.find_one({"code": os.environ["FIRM_CODE"]})
+    email = os.environ["DEFAULT_ADVISER_EMAIL"].lower()
+    seed = User(email=email, name=os.environ["ADVISER_NAME"], created_at=now_iso(),
+                password_hash=bcrypt.hashpw(os.environ["ADVISER_SEED_PASSWORD"].encode(), bcrypt.gensalt()).decode(),
+                role="adviser", firm_id=str(firm["_id"]), is_firm_admin=True, title="Senior Protection Specialist",
+                bio=os.environ["ADVISER_BIO"], photo_url=os.environ["ADVISER_PHOTO_URL"], phone=os.environ["ADVISER_PHONE"],
+                calendly_url=CALENDLY_URL, lead_email=ADVISER_EMAIL, adviser_code=os.environ["ADVISER_CODE"])
+    try:
+        await db.users.update_one({"email": email}, {"$setOnInsert": seed.to_mongo()}, upsert=True)
+    except Exception as e:  # concurrent worker won the race
+        logger.info(f"Adviser seed skipped: {e}")
+    # One-off migration: link pre-existing clients and leads to the default adviser
+    mark = await db.users.find_one({"email": email})
+    await db.users.update_many({"role": {"$exists": False}}, {"$set": {"role": "client"}})
+    await db.users.update_many({"role": "client", "adviser_id": None}, {"$set": {"adviser_id": str(mark["_id"]), "firm_id": mark.get("firm_id")}})
+    await db.leads.update_many({"adviser_id": None}, {"$set": {"adviser_id": str(mark["_id"]), "firm_id": mark.get("firm_id"), "status": "new"}})
 
 
 app.include_router(api)
@@ -437,8 +661,12 @@ app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=["*"], 
 @app.on_event("startup")
 async def startup():
     await db.users.create_index("email", unique=True)
+    await db.users.create_index("adviser_code", unique=True, partialFilterExpression={"adviser_code": {"$type": "string"}})
+    await db.firms.create_index("code", unique=True)
     await db.assessments.create_index("user_id")
+    await db.leads.create_index("adviser_id")
     await db.rate_limits.create_index("expires_at", expireAfterSeconds=0)
+    await seed_default_adviser()
 
 
 @app.on_event("shutdown")

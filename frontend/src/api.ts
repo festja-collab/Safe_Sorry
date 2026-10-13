@@ -30,7 +30,46 @@ export async function api<T>(path: string, opts: { method?: string; body?: unkno
   return data as T;
 }
 
-export type User = { id: string; email: string; name: string };
+export type User = { id: string; email: string; name: string; role: "client" | "adviser"; is_firm_admin: boolean; adviser_code: string | null };
+
+export type AdviserProfile = {
+  id: string;
+  name: string;
+  title: string;
+  bio: string;
+  photo_url: string;
+  phone: string;
+  calendly_url: string;
+  email: string;
+  adviser_code: string | null;
+  firm_name: string;
+  fca_number: string;
+  principal_name: string;
+  principal_fca_number: string;
+};
+
+export type LeadStatus = "new" | "contacted" | "closed";
+export type Lead = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  preferred_time: string;
+  message: string;
+  status: LeadStatus;
+  created_at: string;
+  assessment_id: string | null;
+  summary?: { headline: string; protected_pct: number; life_gap: number } | null;
+  assessment?: Assessment | null;
+};
+
+export function timeAgo(iso: string) {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${Math.max(1, mins)}m ago`;
+  const h = Math.round(mins / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+}
 
 export type Gap = { need: number; have: number; gap: number; monthly?: boolean };
 export type Impact = { icon: string; title: string; body: string; tone: "error" | "warning" | "success" | "info" };

@@ -46,3 +46,15 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 
 ## Update (Oct 2026) — Compliance review pack
 - GET /api/compliance-pack: printable HTML pack (backend/compliance_pack.py) generated from live settings: summary, review access, journey, all customer wording, calc assumptions + worked example, AI prompt + fixed sample letter, data/processors/security, Consumer Duty, open items, sign-off table
+
+## Update (Oct 2026) — Multi-firm foundation + lead inbox
+- Collections: firms; users gain role (client/adviser), adviser_id, firm_id, is_firm_admin, adviser profile fields, adviser_code (unique)
+- Seed (startup, $setOnInsert): SFL firm + Mark adviser (firm admin, code MARK-SFL); migrates existing clients/leads to Mark
+- Client: optional adviser code at sign-up; Profile → Your adviser (link by code); Adviser tab reads /api/my-adviser
+- Adviser: dashboard Home (stats, share code, new leads), Leads tab (filter chips), lead detail (call/email, status new/contacted/closed, family summary, open full report), Adviser & firm settings
+- Endpoints: /api/my-adviser, /api/me/adviser, /api/adviser/leads[/{id}] (GET/PATCH), /api/adviser/stats, /api/adviser/profile (GET/PUT), /api/firm (PUT, admin)
+- Next: firm admin adding advisers, Stripe subscriptions, per-firm branding
+
+## Update (Oct 2026) — Invite a client
+- Adviser Home → "Invite a client" (/invite): name, 3 message templates, optional note, live preview, native share sheet
+- Public landing page GET /api/invite/{code}?name= (backend/invite.py): adviser photo, code, store buttons (IOS_APP_URL / ANDROID_APP_URL env; "Coming soon" when empty), FCA line

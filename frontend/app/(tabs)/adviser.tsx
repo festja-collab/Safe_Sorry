@@ -8,25 +8,13 @@ import { Linking, Pressable, ScrollView, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { api, AssessmentSummary } from "@/src/api";
+import { api, AdviserProfile, AssessmentSummary } from "@/src/api";
 import { useAuth } from "@/src/auth";
 import { Button, Field, Txt } from "@/src/components/ui";
 import { usesNativeTabs } from "@/src/navigation";
 import { makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
-type Config = {
-  calendly_url: string;
-  adviser: {
-    name: string;
-    bio: string;
-    photo_url: string;
-    phone: string;
-    firm_name: string;
-    fca_number: string;
-    principal_name: string;
-    principal_fca_number: string;
-  };
-};
+type Config = AdviserProfile;
 const TIMES = ["Mornings", "Afternoons", "Evenings", "Weekends", "Any time"];
 
 export default function Adviser() {
@@ -42,8 +30,8 @@ export default function Adviser() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const config = useQuery({ queryKey: ["config"], queryFn: () => api<Config>("/config") });
-  const adviser = config.data?.adviser;
+  const config = useQuery({ queryKey: ["my-adviser"], queryFn: () => api<Config>("/my-adviser") });
+  const adviser = config.data;
   const first = adviser?.name.split(" ")[0] ?? "your adviser";
   const list = useQuery({ queryKey: ["assessments"], queryFn: () => api<AssessmentSummary[]>("/assessments") });
   const assessmentId = params.assessment ?? list.data?.[0]?.id;

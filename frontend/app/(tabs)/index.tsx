@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api, ArticleSummary, AssessmentSummary, gbp } from "@/src/api";
 import { useAuth } from "@/src/auth";
+import { AdviserHome } from "@/src/components/adviser-home";
 import { Button, IconBadge, Loading, Txt } from "@/src/components/ui";
 import { usesNativeTabs } from "@/src/navigation";
 import { makeStyles, radius, spacing, useTheme } from "@/src/theme";
@@ -19,7 +20,7 @@ function greeting() {
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
-export default function Home() {
+function ClientHome() {
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -123,6 +124,11 @@ export default function Home() {
       </ScrollView>
     </View>
   );
+}
+
+export default function Home() {
+  const { user } = useAuth();
+  return user?.role === "adviser" ? <AdviserHome /> : <ClientHome />;
 }
 
 const useStyles = makeStyles((c) => ({

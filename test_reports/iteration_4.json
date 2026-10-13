@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 4 verifies the new adviser 'Invite a client' feature end-to-end. Backend: 10/10 tests pass in /app/backend/tests/test_invite.py — GET /api/invite/MARK-SFL?name=Sarah returns 200 text/html containing 'Hi Sarah,', the code 'MARK-SFL', 'Mark Turner', firm 'SFL Wealth Management Ltd (FRN 912517)', 'Appointed Representative of Rosemount Financial Solutions (IFA) Limited (FRN 535515)' and 'Coming soon to the App Store and Google Play.' (IOS_APP_URL / ANDROID_APP_URL env vars are empty strings so the Coming-soon copy renders). Unknown code -> 404. name=<script>alert(1)</script> is HTML-escaped (raw '<script>alert(1)</script>' not in response; '&lt;script&gt;' present). No-name renders fallback 'Hi,'. Long name is truncated to 40 chars server-side (name.strip()[:40]). Lowercase code 'mark-sfl' resolves because find_adviser_by_code uppercases the input. Regression smoke: /api/config, adviser login (returns role=adviser, is_firm_admin=true, adviser_code=MARK-SFL), /api/adviser/stats, /api/adviser/leads, client login + /api/my-adviser all pass. Frontend (mobile viewport 390x844): adviser Mark login -> adviser-home-screen with adviser-code 'MARK-SFL' and the new adviser-invite-client-button; tapping it routes to /invite rendering invite-screen with the Txt 'Send a gentle nudge', invite-name-input, three template chips invite-template-nudge / invite-template-after-chat / invite-template-life-event (all tappable and update the preview copy — 'no pressure at all', 'lovely to chat earlier', 'congratulations on the big news'), invite-note-input (multiline) whose text appears in the preview, invite-preview that live-updates with name, template, note, the link 'https://protect-me-17.preview.emergentagent.com/api/invite/MARK-SFL?name=Sarah' and the 'Use my code MARK-SFL when you sign up.' + first-name signature, invite-send-button present (Web Share API fires but headless browser does not open a share sheet — expected, not a bug per handoff), invite-back-button returns to adviser-home-screen. Regression: adviser tabs are home/leads/learn/profile; client Tom login shows tabs home/learn/adviser/profile (no leads tab) and no invite button. db.rate_limits cleared at end.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_invite.py",
+    "/app/test_reports/pytest/invite.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "invite.py correctly escapes every interpolation (adviser.name/photo_url/title/firm_name/fca_number/principal_name/principal_fca_number, user-provided name, app_name, adviser_code, store URLs) using html.escape — XSS surface is covered.",
+    "invite.py gates store buttons on 'https://' prefix on both IOS_APP_URL and ANDROID_APP_URL; falls back to 'Coming soon to the App Store and Google Play.' when both are empty — matches spec.",
+    "server.py invite_landing truncates name.strip()[:40] before passing to the template, preventing abusive long names in shared pages — nice.",
+    "invite.tsx uses process.env.EXPO_PUBLIC_BACKEND_URL for the link and encodes the name query via encodeURIComponent — matches backend expectations.",
+    "Web Share API: Share.share on web requires HTTPS and a user gesture; in headless Playwright it may silently resolve without opening a share sheet. The code handles both actions (sharedAction sets 'sent' banner) — acceptable per handoff note.",
+    "server.py is now ~675 lines; consider splitting adviser + invite routes into routers/*.py before it crosses 700."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_invite.py (new, 10 tests)"
+  ],
+  "success_rate": {"backend": "100% (10/10 invite tests)", "frontend": "100% (adviser invite flow + client regression)"},
+  "seed_data_creation": "No seed data created. Mark's profile and SFL firm doc untouched (handoff requested). db.rate_limits cleared at the end.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Invite feature verified. Reusable test file: /app/backend/tests/test_invite.py (10 tests, ~2s runtime). Public invite URL is GET /api/invite/{CODE}?name={first-name}; code is uppercased server-side; name is HTML-escaped and truncated to 40 chars. Store buttons require 'https://' prefix on IOS_APP_URL/ANDROID_APP_URL env vars — currently empty so the 'Coming soon' copy is live; when the main agent sets those env vars, re-run test_invite.py — the 'Coming soon' assertion will need to flip. Frontend invite screen is at /invite (expo-router) with testIDs invite-screen, invite-name-input, invite-template-{nudge|after-chat|life-event}, invite-note-input, invite-preview, invite-send-button, invite-back-button. The invite entry button on adviser home is adviser-invite-client-button. Web Share on web preview silently resolves in headless Chromium — do not fail tests on that.",
+  "rca_of_issue": ""
+}

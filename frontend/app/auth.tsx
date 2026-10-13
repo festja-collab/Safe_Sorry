@@ -10,9 +10,10 @@ import { Button, Field, Txt } from "@/src/components/ui";
 import { makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
 export default function AuthScreen() {
-  const params = useLocalSearchParams<{ mode?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; code?: string }>();
   const [mode, setMode] = useState<"login" | "register">(params.mode === "login" ? "login" : "register");
   const [name, setName] = useState("");
+  const [adviserCode, setAdviserCode] = useState(params.code ?? "");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -36,7 +37,7 @@ export default function AuthScreen() {
     setBusy(true);
     try {
       if (mode === "login") await signIn(email, password);
-      else await register(name, email, password);
+      else await register(name, email, password, adviserCode);
       router.replace(mode === "register" ? "/assessment" : "/(tabs)");
     } catch (e: any) {
       setError(e.message ?? "Something went wrong");
@@ -85,6 +86,16 @@ export default function AuthScreen() {
             secureTextEntry
             onSubmitEditing={submit}
           />
+          {mode === "register" ? (
+            <Field
+              testID="auth-adviser-code-input"
+              label="Adviser code (optional)"
+              value={adviserCode}
+              onChangeText={(v) => setAdviserCode(v.toUpperCase())}
+              placeholder="e.g. MARK-SFL"
+              autoCapitalize="characters"
+            />
+          ) : null}
           {error ? (
             <View testID="auth-error" style={s.error}>
               <Feather name="alert-circle" size={16} color={colors.error} />

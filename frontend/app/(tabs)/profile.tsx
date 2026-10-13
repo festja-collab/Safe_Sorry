@@ -71,6 +71,19 @@ export default function Profile() {
           <Txt style={{ flex: 1, color: colors.onSurface }}>New family check</Txt>
           <Feather name="chevron-right" size={20} color={colors.muted} />
         </Pressable>
+        {user?.role === "adviser" ? (
+          <Pressable testID="profile-adviser-settings" onPress={() => router.push("/adviser-settings")} style={s.row}>
+            <IconBadge name="briefcase" bg={colors.brandTertiary} fg={colors.onBrandTertiary} />
+            <Txt style={{ flex: 1, color: colors.onSurface }}>Adviser {user.is_firm_admin ? "& firm " : ""}settings</Txt>
+            <Feather name="chevron-right" size={20} color={colors.muted} />
+          </Pressable>
+        ) : (
+          <Pressable testID="profile-link-adviser" onPress={() => router.push("/link-adviser")} style={s.row}>
+            <IconBadge name="user-check" bg={colors.brandTertiary} fg={colors.onBrandTertiary} />
+            <Txt style={{ flex: 1, color: colors.onSurface }}>Your adviser</Txt>
+            <Feather name="chevron-right" size={20} color={colors.muted} />
+          </Pressable>
+        )}
         <Button testID="profile-logout-button" title="Log out" variant="ghost" icon="log-out" onPress={async () => { await signOut(); router.replace("/onboarding"); }} />
       </ScrollView>
     </View>

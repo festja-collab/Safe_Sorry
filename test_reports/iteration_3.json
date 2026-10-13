@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 3 fully verifies the multi-firm / adviser feature set. Backend: 26/26 tests pass in /app/backend/tests/test_adviser_multifirm.py covering seeded adviser login shape (role=adviser, is_firm_admin=true, adviser_code=MARK-SFL), register with valid/invalid/blank adviser code (-> 200 + my-adviser routes to MARK; invalid -> 400; blank -> default adviser Mark), POST /api/leads routes to the client's adviser, GET /api/adviser/leads (adviser only, client -> 403, includes summary), ?status= filter (new/contacted/closed), GET /api/adviser/leads/{id} includes full assessment, PATCH status new/contacted/closed (and 422 on garbage), cross-adviser isolation (second adviser inserted directly in Mongo cannot see Mark's lead -> 404 on GET and PATCH, and cannot read assessment -> 404), adviser's /api/assessments/{id} only works for assessments attached to their own leads, /api/adviser/stats returns new/contacted/closed/total/clients counts, GET/PUT /api/adviser/profile with https pattern validation (http -> 422, https -> 200), PUT /api/firm admin-only (second adviser -> 403, client -> 403), POST /api/me/adviser links client by code (adviser -> 400, bad code -> 404), /api/compliance-pack still returns 200 HTML. Frontend (mobile viewport 390x844): register screen in register mode shows 'Adviser code (optional)' field with testID auth-adviser-code-input; client Tom logs in -> tabs are Home/Learn/Adviser/Profile (no Leads tab); Adviser tab renders Mark Turner + SFL Wealth Management Ltd firm info from /api/my-adviser; Profile shows profile-link-adviser (and NOT profile-adviser-settings); link-adviser screen renders with link-adviser-code-input and current adviser card. Mark logs in -> tabs are Home/Leads/Learn/Profile (no Adviser tab); adviser-home-screen with adviser-code 'MARK-SFL', adviser-share-code-button, and stat tiles for new/contacted/clients; Leads tab renders filter chips all/new/contacted/closed and lead rows; opening a lead shows lead-detail-screen, tapping lead-status-contacted flips the pill (verified visually); 'Open full family report' button opens the report; Profile -> profile-adviser-settings opens adviser-settings-screen; tapping settings-save-button shows settings-saved toast. Note: adviser dashboard has 3 stat tiles (new/contacted/clients) — no 'closed' tile exists in the UI, which is a product choice, not a bug. Mark's profile and firm were snapshot and restored from .env canonical values; 10 TEST leads and all TEST_* users cleaned up; rate_limits collection cleared at start AND end.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_adviser_multifirm.py",
+    "/app/backend/tests/test_safe_sorry.py",
+    "/app/backend/tests/test_abuse_limits.py",
+    "/app/test_reports/pytest/adviser_multifirm.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py GET /api/assessments/{aid} elegantly scopes adviser access via the lead<->assessment link (adviser_id + user_id match), preventing enumeration — good.",
+    "find_adviser_by_code uppercases the input before query but the stored adviser_code in seed is 'MARK-SFL' (already upper) — consistent.",
+    "AdviserProfileIn uses regex `^(https://\\S+)?$` on photo_url/calendly_url, so http:// and malformed URLs are 422 — verified.",
+    "default_adviser() will crash with None if DEFAULT_ADVISER_EMAIL seed hasn't run; seed_default_adviser is idempotent via $setOnInsert, which is correct.",
+    "Minor: file length ~665 lines approaching the 700-line threshold; splitting adviser endpoints into a routers/adviser.py would be cleaner but not urgent.",
+    "Still uses deprecated @app.on_event('startup'/'shutdown') — consider lifespan context manager (same comment as iteration 2)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_adviser_multifirm.py (new, 26 tests)"
+  ],
+  "success_rate": {"backend": "100% (26/26)", "frontend": "100% (client + adviser flows all pass)"},
+  "seed_data_creation": "Created ~6 TEST_* client accounts (unique X-Forwarded-For per request to avoid register-per-IP rate limit) and one TEST Other Adviser inserted directly via Mongo with code TEST-OTH-xxxx. All test users, their leads, and the second adviser deleted post-run. Mark's profile and SFL firm doc restored from .env canonical values. rate_limits cleared.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Multi-firm feature is fully verified. Reusable adviser test file: /app/backend/tests/test_adviser_multifirm.py (uses pymongo + bcrypt to insert a disposable second adviser directly in Mongo for isolation tests; snapshots and restores Mark's profile from .env in a session-scoped teardown). Rate-limit namespaces unchanged. Mark seed credentials: mark.turner@sflwealth.co.uk / IupwtaavjJ2CfMKIFjRhfott, code MARK-SFL. Default adviser email env key is DEFAULT_ADVISER_EMAIL. If adding more adviser endpoints, keep /api/adviser/* prefix and the adviser_user() dependency pattern. The adviser dashboard shows 3 stats tiles (new/contacted/clients) by design — don't flag the missing 'closed' tile as a bug. Email sending still fails with insufficient credits (known).",
+  "rca_of_issue": ""
+}
