@@ -28,8 +28,13 @@ from articles import ARTICLES  # noqa: E402
 from emailer import send_email  # noqa: E402
 from compliance_pack import build_pack  # noqa: E402
 from invite import invite_page  # noqa: E402
-from fastapi.responses import HTMLResponse  # noqa: E402
+from privacy import PRIVACY_VERSION, privacy_sections  # noqa: E402
+import hashlib  # noqa: E402
+from fastapi.responses import HTMLResponse, Response  # noqa: E402
+from fastapi import UploadFile, File  # noqa: E402
+from starlette.concurrency import run_in_threadpool  # noqa: E402
 import limiter  # noqa: E402
+import storage  # noqa: E402
 from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone  # noqa: E402
 
 client = AsyncIOMotorClient(os.environ['MONGO_URL'])
@@ -87,6 +92,8 @@ class User(BaseDocument):
     signup_code: str = ""      # full code entered, e.g. MARK-SFL-FB
     signup_source: str = ""    # suffix, e.g. FB / INV
     heard_from: str = ""
+    privacy_version: str = ""
+    privacy_accepted_at: str = ""
 
 
 class Firm(BaseDocument):
@@ -95,7 +102,31 @@ class Firm(BaseDocument):
     fca_number: str = ""
     principal_name: str = ""
     principal_fca_number: str = ""
+    brand_color: str = ""
+    logo_path: str = ""
+    logo_content_type: str = ""
+    logo_version: int = 0
+    plan: str = "founder"        # founder | trial
+    trial_ends_at: str = ""
     created_at: str
+
+
+HEX_COLOR = r"^(#[0-9A-Fa-f]{6})?$"
+TRIAL_DAYS = 14
+
+
+class FirmRegisterIn(BaseModel):
+    firm_name: str = Field(min_length=2, max_length=120)
+    fca_number: str = Field(pattern=r"^\d{6,7}$")
+    principal_name: str = Field(default="", max_length=120)
+    principal_fca_number: str = Field(default="", pattern=r"^(\d{6,7})?$")
+    brand_color: str = Field(default="", pattern=HEX_COLOR)
+    name: str = Field(min_length=1, max_length=80)
+    title: str = Field(default="", max_length=80)
+    phone: str = Field(default="", max_length=30)
+    email: EmailStr
+    password: str = Field(min_length=10, max_length=128)
+    privacy_accepted: bool = False
 
 
 class RegisterIn(BaseModel):
@@ -104,6 +135,7 @@ class RegisterIn(BaseModel):
     password: str = Field(min_length=10, max_length=128)
     adviser_code: str = Field(default="", max_length=40)
     heard_from: str = Field(default="", max_length=40)
+    privacy_accepted: bool = False
 
 
 class LoginIn(BaseModel):
@@ -154,6 +186,7 @@ class LeadIn(BaseModel):
     preferred_time: str = Field(default="", max_length=40)
     message: str = Field(default="", max_length=1000)
     assessment_id: Optional[str] = None
+    consent: bool = False
 
 
 class Lead(BaseDocument):
@@ -167,9 +200,11 @@ class Lead(BaseDocument):
     adviser_id: Optional[str] = None
     firm_id: Optional[str] = None
     status: str = "new"                  # new | contacted | closed
-    source_code: str = ""
     source: str = ""
+    source_code: str = ""
     heard_from: str = ""
+    consent_at: str = ""
+    consent_text: str = ""
     email_sent: bool = False
     created_at: str
 
@@ -282,9 +317,19 @@ async def get_firm(firm_id: Optional[str]) -> Optional[Firm]:
     return Firm.from_mongo(doc) if doc else None
 
 
+def trial_days_left(f: Optional[Firm]) -> Optional[int]:
+    if not f or f.plan != "trial" or not f.trial_ends_at:
+        return None
+    left = datetime.fromisoformat(f.trial_ends_at) - datetime.now(timezone.utc)
+    return max(0, -(-int(left.total_seconds()) // DAY))
+
+
 async def adviser_profile(a: User) -> dict:
     f = await get_firm(a.firm_id)
     return {
+        "firm_id": f.id if f else None, "brand_color": f.brand_color if f else "",
+        "logo_url": f"/api/firm-logo/{f.id}?v={f.logo_version}" if f and f.logo_path else "",
+        "plan": f.plan if f else "", "trial_ends_at": f.trial_ends_at if f else "", "trial_days_left": trial_days_left(f),
         "id": a.id, "name": a.name, "title": a.title, "bio": a.bio, "photo_url": a.photo_url, "phone": a.phone,
         "calendly_url": a.calendly_url, "email": a.lead_email or a.email, "adviser_code": a.adviser_code,
         "firm_name": f.name if f else "", "fca_number": f.fca_number if f else "",
@@ -301,6 +346,8 @@ async def register(body: RegisterIn, request: Request):
     if await db.users.find_one({"email": email}):
         raise HTTPException(409, "An account with this email already exists")
     source = ""
+    if not body.privacy_accepted:
+        raise HTTPException(400, "Please read and accept the privacy notice to create an account.")
     if body.adviser_code.strip():
         adviser, source = await resolve_code(body.adviser_code)
         if not adviser:
@@ -310,7 +357,8 @@ async def register(body: RegisterIn, request: Request):
     pw = bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode()
     user = User(email=email, name=body.name.strip(), password_hash=pw, created_at=now_iso(),
                 adviser_id=adviser.id, firm_id=adviser.firm_id, signup_code=body.adviser_code.strip().upper(),
-                signup_source=source, heard_from=body.heard_from.strip())
+                signup_source=source, heard_from=body.heard_from.strip(),
+                privacy_version=PRIVACY_VERSION, privacy_accepted_at=now_iso())
     res = await db.users.insert_one(user.to_mongo())
     user.id = str(res.inserted_id)
     return {"token": make_token(user.id, 0), "user": public_user(user)}
@@ -362,6 +410,86 @@ async def change_password(body: ChangePasswordIn, user: User = Depends(session_u
     fresh = User.from_mongo(await db.users.find_one({"_id": ObjectId(user.id)}))
     # Old tokens (all devices) are now revoked; this device gets a fresh one
     return {"token": make_token(fresh.id, fresh.password_version), "user": public_user(fresh)}
+
+
+# ---------------- Forgot password (emailed 6-digit code) ----------------
+RESET_TTL_MIN = 15
+RESET_MAX_ATTEMPTS = 5
+
+
+def _code_hash(user_id: str, code: str) -> str:
+    return hashlib.sha256(f"{JWT_SECRET}:{user_id}:{code}".encode()).hexdigest()
+
+
+class ForgotIn(BaseModel):
+    email: EmailStr
+
+
+@api.post("/auth/forgot-password")
+async def forgot_password(body: ForgotIn, request: Request):
+    email = str(body.email).lower()
+    msg = "Too many reset requests. Please try again later."
+    await limiter.take(db.rate_limits, namespace="reset-ip", key=limiter.client_ip(request), limit=10, window=3600, message=msg)
+    await limiter.take(db.rate_limits, namespace="reset-email", key=email, limit=3, window=3600, message=msg)
+    generic = {"ok": True, "message": "If there's an account for that email, we've sent a 6-digit code. It lasts 15 minutes."}
+    doc = await db.users.find_one({"email": email})
+    if not doc:
+        return generic  # never reveal whether an account exists
+    uid = str(doc["_id"])
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    now = datetime.now(timezone.utc)
+    await db.password_resets.delete_many({"user_id": uid})
+    await db.password_resets.insert_one({"user_id": uid, "code_hash": _code_hash(uid, code), "attempts": 0,
+                                         "created_at": now, "expires_at": now + timedelta(minutes=RESET_TTL_MIN)})
+    html = (
+        '<table role="presentation" width="100%" style="background:#FFFFFF"><tr><td style="padding:24px;font-family:Arial,sans-serif;color:#1E2B38">'
+        f'<p>Hi {escape(doc.get("name", ""))},</p>'
+        f'<p>Here is your {escape(APP_NAME)} password reset code:</p>'
+        f'<p style="font-size:32px;letter-spacing:6px;font-weight:bold;color:#223342">{code}</p>'
+        f'<p>Type it into the app to choose a new password. It expires in {RESET_TTL_MIN} minutes and can only be used once.</p>'
+        "<p>If you didn't ask to reset your password, you can ignore this email - your password won't change.</p>"
+        f'<p style="font-size:12px;color:#888">Sent by {escape(APP_NAME)}. We will never ask for your password by email or phone.</p>'
+        '</td></tr></table>'
+    )
+    try:
+        await send_email(to=email, subject=f"Your {APP_NAME} reset code", html=html)
+    except HTTPException as e:
+        # Same response either way so nobody can tell which emails have accounts
+        logger.error(f"Reset email failed: {e.detail}")
+    return generic
+
+
+class ResetIn(BaseModel):
+    email: EmailStr
+    code: str = Field(pattern=r"^\d{6}$")
+    new_password: str = Field(min_length=10, max_length=128)
+
+
+@api.post("/auth/reset-password")
+async def reset_password(body: ResetIn):
+    bad = HTTPException(400, "That code isn't right or has expired. Please request a new one.")
+    doc = await db.users.find_one({"email": str(body.email).lower()})
+    if not doc:
+        raise bad
+    uid = str(doc["_id"])
+    r = await db.password_resets.find_one({"user_id": uid})
+    if not r or r["attempts"] >= RESET_MAX_ATTEMPTS or r["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise bad
+    if not secrets.compare_digest(r["code_hash"], _code_hash(uid, body.code)):
+        await db.password_resets.update_one({"_id": r["_id"]}, {"$inc": {"attempts": 1}})
+        raise bad
+    await db.password_resets.delete_many({"user_id": uid})  # single use
+    await db.users.update_one({"_id": doc["_id"]}, {
+        "$set": {"password_hash": bcrypt.hashpw(body.new_password.encode(), bcrypt.gensalt()).decode(), "must_change_password": False},
+        "$inc": {"password_version": 1}})
+    fresh = User.from_mongo(await db.users.find_one({"_id": doc["_id"]}))
+    return {"token": make_token(fresh.id, fresh.password_version), "user": public_user(fresh)}
+
+
+@api.get("/privacy")
+async def privacy():
+    a = await adviser_profile(await default_adviser())
+    return {"version": PRIVACY_VERSION, "sections": privacy_sections(app_name=APP_NAME, firm=a, contact_email=a["email"])}
 
 
 def assessment_out(a: Assessment) -> dict:
@@ -574,12 +702,17 @@ async def create_lead(body: LeadIn, user: User = Depends(current_user)):
     await limiter.take(db.rate_limits, namespace="lead-user", key=user.id, limit=LEADS_PER_DAY, window=DAY,
                        message="We've already got your request. Your adviser will be in touch soon.")
     summary = (await get_owned(body.assessment_id, user)).results if body.assessment_id else None
+    if not body.consent:
+        raise HTTPException(400, "Please tick the box to agree to your details being shared with your adviser.")
     adviser = await adviser_for(user)
     firm = await get_firm(adviser.firm_id)
+    consent_text = (f"I agree to my contact details and family report being shared with {adviser.name}"
+                    f"{' at ' + firm.name if firm else ''} so they can contact me about protection.")
     lead = Lead(user_id=user.id, email=user.email, name=body.name.strip(), phone=body.phone.strip(),
                 preferred_time=body.preferred_time, message=body.message, assessment_id=body.assessment_id,
                 adviser_id=adviser.id, firm_id=adviser.firm_id, created_at=now_iso(),
-                source_code=user.signup_code, source=user.signup_source, heard_from=user.heard_from)
+                source_code=user.signup_code, source=user.signup_source, heard_from=user.heard_from,
+                consent_at=now_iso(), consent_text=consent_text)
     res = await db.leads.insert_one(lead.to_mongo())
     lead.id = str(res.inserted_id)
     try:
@@ -702,6 +835,27 @@ async def firm_admin(me: User = Depends(adviser_user)) -> User:
     return me
 
 
+@api.get("/firm/stats")
+async def firm_stats(me: User = Depends(firm_admin)):
+    advisers = [User.from_mongo(d) async for d in db.users.find({"firm_id": me.firm_id, "role": "adviser"}).sort("created_at", 1)]
+    rows, by_source = [], {}
+    totals = {"new": 0, "contacted": 0, "closed": 0, "clients": 0, "checks": 0}
+    for a in advisers:
+        r = {s: await db.leads.count_documents({"adviser_id": a.id, "status": s}) for s in ("new", "contacted", "closed")}
+        client_ids = [str(d["_id"]) async for d in db.users.find({"adviser_id": a.id, "role": "client"}, {"_id": 1})]
+        r["clients"] = len(client_ids)
+        r["checks"] = await db.assessments.count_documents({"user_id": {"$in": client_ids}}) if client_ids else 0
+        for k in totals:
+            totals[k] += r[k]
+        rows.append({"id": a.id, "name": a.name, "adviser_code": a.adviser_code, **r, "leads": r["new"] + r["contacted"] + r["closed"]})
+    async for d in db.leads.find({"firm_id": me.firm_id}, {"source": 1, "source_code": 1}):
+        k = source_label(d.get("source", ""), d.get("source_code", ""))
+        by_source[k] = by_source.get(k, 0) + 1
+    totals["leads"] = totals["new"] + totals["contacted"] + totals["closed"]
+    return {"totals": totals, "advisers": sorted(rows, key=lambda x: -x["leads"]),
+            "by_source": [{"label": k, "count": v} for k, v in sorted(by_source.items(), key=lambda x: -x[1])]}
+
+
 @api.get("/firm/advisers")
 async def list_firm_advisers(me: User = Depends(firm_admin)):
     out = []
@@ -765,6 +919,7 @@ class FirmIn(BaseModel):
     fca_number: str = Field(default="", max_length=20)
     principal_name: str = Field(default="", max_length=120)
     principal_fca_number: str = Field(default="", max_length=20)
+    brand_color: str = Field(default="", pattern=HEX_COLOR)
 
 
 @api.put("/firm")
@@ -773,6 +928,90 @@ async def put_firm(body: FirmIn, me: User = Depends(adviser_user)):
         raise HTTPException(403, "Only your firm's administrator can change firm details")
     await db.firms.update_one({"_id": ObjectId(me.firm_id)}, {"$set": body.model_dump()})
     return await adviser_profile(me)
+
+
+# ---------------- Firm self sign-up & branding ----------------
+async def unique_code(base: str, collection, field: str) -> str:
+    code, n = base, 2
+    while await collection.find_one({field: code}):
+        code, n = f"{base}{n}", n + 1
+    return code
+
+
+@api.post("/firms/register")
+async def register_firm(body: FirmRegisterIn, request: Request):
+    await limiter.take(db.rate_limits, namespace="register-ip", key=limiter.client_ip(request), limit=REGISTER_IP_LIMIT,
+                       window=3600, message="Too many accounts created from this connection. Please try again later.")
+    if not body.privacy_accepted:
+        raise HTTPException(400, "Please read and accept the privacy notice to create an account.")
+    email = str(body.email).lower()
+    if await db.users.find_one({"email": email}):
+        raise HTTPException(409, "An account with this email already exists")
+    words = [re.sub(r"[^A-Z0-9]", "", w) for w in body.firm_name.upper().split()]
+    words = [w for w in words if w and w not in ("LTD", "LIMITED", "LLP", "PLC", "THE", "AND")] or ["FIRM"]
+    firm_code = await unique_code((words[0] if len(words[0]) >= 3 else "".join(words))[:8], db.firms, "code")
+    first = re.sub(r"[^A-Z0-9]", "", body.name.strip().split(" ")[0].upper())[:10] or "ADVISER"
+    adviser_code = await unique_code(f"{first}-{firm_code}", db.users, "adviser_code")
+    now = datetime.now(timezone.utc)
+    firm = Firm(code=firm_code, name=body.firm_name.strip(), fca_number=body.fca_number,
+                principal_name=body.principal_name.strip(), principal_fca_number=body.principal_fca_number,
+                brand_color=body.brand_color, plan="trial", trial_ends_at=(now + timedelta(days=TRIAL_DAYS)).isoformat(),
+                created_at=now.isoformat())
+    for _ in range(5):  # another sign-up may grab the same code at the same moment
+        try:
+            fres = await db.firms.insert_one(firm.to_mongo())
+            break
+        except DuplicateKeyError:
+            firm.code = f"{firm.code[:8]}{secrets.randbelow(900) + 100}"
+    else:
+        raise HTTPException(503, "Please try again in a moment.")
+    user = User(email=email, name=body.name.strip(), created_at=now_iso(),
+                password_hash=bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode(),
+                role="adviser", firm_id=str(fres.inserted_id), is_firm_admin=True, title=body.title.strip(),
+                phone=body.phone.strip(), lead_email=email, adviser_code=adviser_code,
+                privacy_version=PRIVACY_VERSION, privacy_accepted_at=now_iso())
+    try:
+        res = await db.users.insert_one(user.to_mongo())
+    except DuplicateKeyError:
+        await db.firms.delete_one({"_id": fres.inserted_id})
+        raise HTTPException(409, "An account with this email already exists")
+    user.id = str(res.inserted_id)
+    return {"token": make_token(user.id, 0), "user": public_user(user)}
+
+
+LOGO_TYPES = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}
+LOGO_MAX_BYTES = 2 * 1024 * 1024
+
+
+@api.post("/firm/logo")
+async def upload_firm_logo(file: UploadFile = File(...), me: User = Depends(firm_admin)):
+    ext = LOGO_TYPES.get((file.content_type or "").lower())
+    if not ext:
+        raise HTTPException(400, "Please choose a PNG, JPG or WebP image.")
+    data = await file.read(LOGO_MAX_BYTES + 1)
+    if len(data) > LOGO_MAX_BYTES:
+        raise HTTPException(400, "That image is over 2 MB. Please choose a smaller one.")
+    path = f"{storage.APP_PREFIX}/firm-logos/{me.firm_id}/{uuid.uuid4()}.{ext}"
+    try:
+        result = await run_in_threadpool(storage.put_object, path, data, file.content_type)
+    except Exception as e:
+        logger.error(f"Logo upload failed: {e}")
+        raise HTTPException(503, "We couldn't upload your logo just now. Please try again later.")
+    await db.firms.update_one({"_id": ObjectId(me.firm_id)}, {"$set": {"logo_path": result["path"], "logo_content_type": file.content_type},
+                                                              "$inc": {"logo_version": 1}})
+    return await adviser_profile(me)
+
+
+@api.get("/firm-logo/{firm_id}")
+async def firm_logo(firm_id: str):
+    try:
+        f = await get_firm(firm_id)
+    except Exception:
+        f = None
+    if not f or not f.logo_path:
+        raise HTTPException(404, "Logo not found")
+    data, ctype = await run_in_threadpool(storage.get_object, f.logo_path)
+    return Response(content=data, media_type=f.logo_content_type or ctype, headers={"Cache-Control": "public, max-age=86400"})
 
 
 async def seed_default_adviser():
@@ -811,7 +1050,13 @@ async def startup():
     await db.assessments.create_index("user_id")
     await db.leads.create_index("adviser_id")
     await db.rate_limits.create_index("expires_at", expireAfterSeconds=0)
+    await db.password_resets.create_index("expires_at", expireAfterSeconds=0)
+    await db.password_resets.create_index("user_id")
     await seed_default_adviser()
+    try:
+        await run_in_threadpool(storage.init_storage)
+    except Exception as e:
+        logger.error(f"Storage init failed: {e}")
 
 
 @app.on_event("shutdown")

@@ -80,6 +80,29 @@ export function Field({ label, prefix, ...props }: TextInputProps & { label?: st
   );
 }
 
+export function Checkbox({ checked, onToggle, testID, children }: { checked: boolean; onToggle: () => void; testID: string; children: ReactNode }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable testID={testID} onPress={onToggle} style={{ flexDirection: "row", gap: spacing.md, alignItems: "flex-start", paddingVertical: spacing.xs }}>
+      <View
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: radius.sm,
+          borderWidth: 2,
+          borderColor: checked ? colors.brandSecondary : colors.borderStrong,
+          backgroundColor: checked ? colors.brandSecondary : "transparent",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {checked ? <Feather name="check" size={16} color={colors.onBrandSecondary} /> : null}
+      </View>
+      <View style={{ flex: 1 }}>{children}</View>
+    </Pressable>
+  );
+}
+
 export function Loading({ label, testID }: { label?: string; testID?: string }) {
   const { colors } = useTheme();
   return (

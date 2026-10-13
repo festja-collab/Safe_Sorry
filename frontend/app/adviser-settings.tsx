@@ -6,13 +6,14 @@ import { Pressable, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AdviserProfile, api } from "@/src/api";
+import { AdviserProfile, api, logoUri, uploadFile } from "@/src/api";
 import { useAuth } from "@/src/auth";
+import { BRAND_COLORS, ColorPicker, LogoBox, pickLogo } from "@/src/components/firm-branding";
 import { Button, Field, Loading, Txt } from "@/src/components/ui";
 import { makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
 type P = { name: string; title: string; bio: string; photo_url: string; phone: string; calendly_url: string; lead_email: string };
-type F = { name: string; fca_number: string; principal_name: string; principal_fca_number: string };
+type F = { name: string; fca_number: string; principal_name: string; principal_fca_number: string; brand_color: string };
 
 export default function AdviserSettings() {
   const { user } = useAuth();
@@ -29,9 +30,20 @@ export default function AdviserSettings() {
     if (q.data && !p) {
       const d = q.data;
       setP({ name: d.name, title: d.title, bio: d.bio, photo_url: d.photo_url, phone: d.phone, calendly_url: d.calendly_url, lead_email: d.email });
-      setF({ name: d.firm_name, fca_number: d.fca_number, principal_name: d.principal_name, principal_fca_number: d.principal_fca_number });
+      setF({ name: d.firm_name, fca_number: d.fca_number, principal_name: d.principal_name, principal_fca_number: d.principal_fca_number, brand_color: d.brand_color || BRAND_COLORS[0].hex });
     }
   }, [q.data, p]);
+
+  const logo = useMutation({
+    mutationFn: async () => {
+      const file = await pickLogo();
+      if (file) await uploadFile("/firm/logo", file);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["adviser-profile"] });
+      qc.invalidateQueries({ queryKey: ["my-adviser"] });
+    },
+  });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -84,6 +96,16 @@ export default function AdviserSettings() {
                 {firmField("fca_number", "Firm FCA number")}
                 {firmField("principal_name", "Principal firm (if Appointed Representative)")}
                 {firmField("principal_fca_number", "Principal FCA number")}
+              </View>
+              <Txt variant="display">Branding</Txt>
+              <View style={s.card}>
+                <ColorPicker value={f?.brand_color ?? ""} onChange={(hex) => { setF((x) => (x ? { ...x, brand_color: hex } : x)); save.reset(); }} />
+                <LogoBox testID="settings-logo-button" uri={logoUri(q.data?.logo_url)} busy={logo.isPending} onPick={() => logo.mutate()} />
+                {logo.isError ? (
+                  <Txt testID="settings-logo-error" color={colors.error}>
+                    {(logo.error as Error).message}
+                  </Txt>
+                ) : null}
               </View>
             </>
           ) : null}

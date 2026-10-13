@@ -36,6 +36,12 @@
       ],
       "expo-font",
       "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose your firm logo for client pages"
+        }
+      ],
       "expo-secure-store",
       "expo-web-browser",
       "expo-status-bar",

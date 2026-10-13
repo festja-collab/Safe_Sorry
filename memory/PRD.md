@@ -64,3 +64,24 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Ad landing page GET /api/start[/{code}]?src=FB shows code MARK-SFL-FB; invite page shows MARK-SFL-INV
 - Codes with suffix resolve to adviser + source; users store signup_code/signup_source/heard_from ("How did you hear about us?" chips); leads snapshot source; lead card/detail show source; stats by_source/by_heard on adviser dashboard; ad link generator with campaign chips
 - Firm admin: GET/POST /api/firm/advisers (auto code FIRST-FIRMCODE, one-time temporary password, forced change on first login); screen /firm-advisers from Adviser settings
+
+## Update (Oct 2026) — Forgot password, firm dashboard, privacy & consent
+- POST /api/auth/forgot-password (generic response, 6-digit code hashed sha256+secret, 15 min TTL collection password_resets, 3/email/hour, 10/IP/hour) and POST /api/auth/reset-password (5 attempts, single use, bumps password_version); screen /forgot-password (link on sign-in)
+- Store links: IOS_APP_URL / ANDROID_APP_URL env (landing pages show buttons when set) — waiting on published store URLs
+- GET /api/firm/stats (firm admin): totals, per-adviser rows, lead sources; screen /firm-dashboard (button on adviser Home)
+- Privacy: backend/privacy.py draft notice (version 2026-10-draft-1), GET /api/privacy, /privacy screen (Profile, sign-up, call-back form); sign-up requires privacy_accepted (stored version + timestamp); leads require consent tick (consent_at + exact consent_text stored)
+
+## Update (Oct 2026) — Forgot password, privacy & consent, firm dashboard
+- POST /api/auth/forgot-password (generic response, 6-digit code hashed, 15 min TTL, 5 attempts, rate limited, emailed via Resend) + POST /api/auth/reset-password (single use, bumps password_version); screen /forgot-password from login
+- Privacy notice draft (backend/privacy.py, GET /api/privacy, screen /privacy, linked from sign-up, call-back form, Profile); sign-up requires privacy_accepted (version + time stored); call-back requires consent tick box (consent_text + consent_at stored on lead)
+- Firm dashboard GET /api/firm/stats (admin) + screen /firm-dashboard (totals, per-adviser, lead sources) from adviser Home
+- Store links: set IOS_APP_URL / ANDROID_APP_URL in backend .env (or Deployment → Secrets) once published
+
+## Update (Oct 2026) — Firm self sign-up, branding, marketing tips
+- POST /api/firms/register (public, rate-limited): firm name, FRN (6-7 digits), optional principal + FRN, brand_color (#hex), admin name/title/phone/email/password, privacy_accepted → creates firm (plan "trial", trial_ends_at +14 days) + firm-admin adviser (code FIRST-FIRMCODE), returns token
+- POST /api/firm/logo (firm admin, multipart PNG/JPG/WebP ≤2MB) → Emergent Object Storage (backend/storage.py, path safe-sorry/firm-logos/{firm_id}/uuid); GET /api/firm-logo/{firm_id} public
+- adviser_profile now returns firm_id, brand_color, logo_url, plan, trial_ends_at, trial_days_left (null for SFL "founder")
+- PUT /api/firm accepts brand_color; invite/ad landing pages use firm logo + brand colour
+- Screens: /firm-signup (link on onboarding), branding section in Adviser settings, trial banner + logo + Marketing tips button on adviser Home, /marketing-tips (static content src/marketing-tips.ts), client Adviser tab shows firm logo/brand line; non-AR firms get correct FCA footer; Book-a-call hidden when no booking link
+- Billing: not built (user will supply pricing). Trial expiry shows banner only, nothing is blocked
+- Email: mark.turner@sflwealth.co.uk is a real mailbox (SMTP RCPT 250); platform email returns false 422 undeliverable_recipient → user to contact support@emergent.sh

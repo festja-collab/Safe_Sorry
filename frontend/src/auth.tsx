@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       finish(
         await api("/auth/register", {
           method: "POST",
-          body: { name: name.trim(), email: email.trim(), password, adviser_code: (adviserCode ?? "").trim(), heard_from: heardFrom ?? "" },
+          body: { name: name.trim(), email: email.trim(), password, adviser_code: (adviserCode ?? "").trim(), heard_from: heardFrom ?? "", privacy_accepted: true },
         }),
       ),
     signOut: async () => {

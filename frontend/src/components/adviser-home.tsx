@@ -1,10 +1,12 @@
+import { Feather } from "@react-native-vector-icons/feather";
 import { useQuery } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Share, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { api, Lead } from "@/src/api";
+import { AdviserProfile, api, Lead, logoUri } from "@/src/api";
 import { useAuth } from "@/src/auth";
 import { LeadCard } from "@/src/components/lead-card";
 import { Button, Loading, Txt } from "@/src/components/ui";
@@ -24,6 +26,8 @@ export function AdviserHome() {
   const bottomChrome = usesNativeTabs ? insets.bottom : 0;
   const stats = useQuery({ queryKey: ["adviser-stats"], queryFn: () => api<Stats>("/adviser/stats") });
   const leads = useQuery({ queryKey: ["adviser-leads", "new"], queryFn: () => api<Lead[]>("/adviser/leads?status=new") });
+  const profile = useQuery({ queryKey: ["adviser-profile"], queryFn: () => api<AdviserProfile>("/adviser/profile") });
+  const trialLeft = profile.data?.trial_days_left;
   const [campaign, setCampaign] = useState(CAMPAIGNS[0]);
   const adLink = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/start/${user?.adviser_code}?src=${campaign}`;
   const refresh = () => {
@@ -39,14 +43,29 @@ export function AdviserHome() {
 
   return (
     <View style={s.root} testID="adviser-home-screen">
-      <View style={[s.header, { paddingTop: insets.top + spacing.md }]}>
-        <Txt variant="label">Adviser dashboard</Txt>
-        <Txt variant="display">{user?.name}</Txt>
+      <View style={[s.header, { paddingTop: insets.top + spacing.md, borderBottomColor: profile.data?.brand_color || colors.surfaceInverse }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
+          <View style={{ flex: 1, gap: spacing.xs }}>
+            <Txt variant="label">{profile.data?.firm_name || "Adviser dashboard"}</Txt>
+            <Txt variant="display">{user?.name}</Txt>
+          </View>
+          {profile.data?.logo_url ? <Image source={{ uri: logoUri(profile.data.logo_url) }} style={s.logo} contentFit="contain" testID="adviser-home-logo" /> : null}
+        </View>
       </View>
       <ScrollView
         contentContainerStyle={{ padding: spacing.xl, paddingTop: spacing.sm, paddingBottom: bottomChrome + spacing.xl, gap: spacing.xl }}
         refreshControl={<RefreshControl refreshing={stats.isRefetching || leads.isRefetching} onRefresh={refresh} tintColor={colors.brandPrimary} />}
       >
+        {trialLeft != null ? (
+          <View style={[s.trial, trialLeft === 0 && { backgroundColor: colors.errorTint }]} testID="adviser-trial-banner">
+            <Feather name="clock" size={18} color={trialLeft === 0 ? colors.error : colors.onBrandTertiary} />
+            <Txt style={{ flex: 1, color: trialLeft === 0 ? colors.error : colors.onBrandTertiary }}>
+              {trialLeft === 0
+                ? "Your free trial has ended. We’ll be in touch about plans. Everything keeps working for now."
+                : `Free trial: ${trialLeft} day${trialLeft === 1 ? "" : "s"} left`}
+            </Txt>
+          </View>
+        ) : null}
         <View style={s.tiles}>
           {tiles.map((t) => (
             <View key={t.id} style={s.tile} testID={`adviser-stat-${t.id}`}>
@@ -67,6 +86,9 @@ export function AdviserHome() {
           </Txt>
           <Txt variant="small">Clients who enter this code when they sign up are linked to you, and their call-back requests come straight to your inbox.</Txt>
           <Button testID="adviser-invite-client-button" title="Invite a client" icon="send" onPress={() => router.push("/invite")} />
+          {user?.is_firm_admin ? (
+            <Button testID="adviser-firm-dashboard-button" title="Firm dashboard" variant="secondary" icon="bar-chart-2" onPress={() => router.push("/firm-dashboard")} />
+          ) : null}
           <Button
             testID="adviser-share-code-button"
             title="Share my code"
@@ -96,6 +118,7 @@ export function AdviserHome() {
             {adLink}
           </Txt>
           <Button testID="adviser-share-ad-link" title="Share ad link" variant="secondary" icon="link" onPress={() => Share.share({ message: adLink })} />
+          <Button testID="adviser-marketing-tips-button" title="Marketing tips" variant="ghost" icon="book-open" onPress={() => router.push("/marketing-tips")} />
         </View>
 
         {stats.data && stats.data.total > 0 ? (
@@ -130,7 +153,9 @@ export function AdviserHome() {
 
 const useStyles = makeStyles((c) => ({
   root: { flex: 1, backgroundColor: c.surface },
-  header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md, gap: spacing.xs, backgroundColor: c.surface },
+  header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md, gap: spacing.xs, backgroundColor: c.surface, borderBottomWidth: 3 },
+  logo: { width: 96, height: 48 },
+  trial: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: c.brandTertiary, borderRadius: radius.md, padding: spacing.lg },
   tiles: { flexDirection: "row", gap: spacing.md },
   tile: { flex: 1, backgroundColor: c.surfaceInverse, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.xs },
   codeCard: { backgroundColor: c.surfaceSecondary, borderRadius: radius.lg, padding: spacing.xl, gap: spacing.md },

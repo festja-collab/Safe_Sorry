@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+
 import { storage } from "@/src/utils/storage";
 
 export const TOKEN_KEY = "safe_sorry_token";
@@ -30,6 +32,29 @@ export async function api<T>(path: string, opts: { method?: string; body?: unkno
   return data as T;
 }
 
+export async function uploadFile<T>(path: string, file: { uri: string; name: string; type: string }): Promise<T> {
+  const token = await storage.secureGet<string | null>(TOKEN_KEY, null);
+  const form = new FormData();
+  if (Platform.OS === "web") {
+    const blob = await (await fetch(file.uri)).blob();
+    form.append("file", blob, file.name);
+  } else {
+    form.append("file", file as any);
+  }
+  const res = await fetch(BASE + path, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const d = (data as any)?.detail;
+    throw new ApiError(typeof d === "string" ? d : "Upload failed. Please try again.", res.status);
+  }
+  return data as T;
+}
+
+/** Firm logos are served by our API; logo_url is a path like /api/firm-logo/... */
+export function logoUri(logoUrl?: string | null) {
+  return logoUrl ? `${process.env.EXPO_PUBLIC_BACKEND_URL}${logoUrl}` : "";
+}
+
 export type User = {
   id: string;
   email: string;
@@ -54,6 +79,12 @@ export type AdviserProfile = {
   fca_number: string;
   principal_name: string;
   principal_fca_number: string;
+  firm_id: string | null;
+  brand_color: string;
+  logo_url: string;
+  plan: string;
+  trial_ends_at: string;
+  trial_days_left: number | null;
 };
 
 export type LeadStatus = "new" | "contacted" | "closed";

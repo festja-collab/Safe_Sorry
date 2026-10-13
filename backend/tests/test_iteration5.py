@@ -45,7 +45,7 @@ def register_client(name="Test Client", adviser_code="", heard_from=""):
     email = f"TEST_{uuid.uuid4().hex[:10]}@example.com"
     r = requests.post(f"{BASE_URL}/api/auth/register", json={
         "name": name, "email": email, "password": "TestPass1234",
-        "adviser_code": adviser_code, "heard_from": heard_from
+        "adviser_code": adviser_code, "heard_from": heard_from, "privacy_accepted": True
     }, headers=_h())
     r.raise_for_status()
     return email, "TestPass1234", r.json()
@@ -280,7 +280,7 @@ class TestLeadTracking:
         self.created_emails.append(email)
         token = s["token"]
         r = requests.post(f"{BASE_URL}/api/leads",
-                          json={"name": "Lead Test", "phone": "07123456789", "preferred_time": "evenings", "message": "hi"},
+                          json={"name": "Lead Test", "phone": "07123456789", "preferred_time": "evenings", "message": "hi", "consent": True},
                           headers=_h(token=token))
         assert r.status_code == 200, r.text
         return email, token, r.json()["id"]

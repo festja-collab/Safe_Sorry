@@ -6,7 +6,7 @@ import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboa
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/src/auth";
-import { Button, Field, Txt } from "@/src/components/ui";
+import { Button, Checkbox, Field, Txt } from "@/src/components/ui";
 import { makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
 export default function AuthScreen() {
@@ -15,6 +15,7 @@ export default function AuthScreen() {
   const [name, setName] = useState("");
   const [adviserCode, setAdviserCode] = useState(params.code ?? "");
   const [heard, setHeard] = useState("");
+  const [agree, setAgree] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -33,6 +34,10 @@ export default function AuthScreen() {
     }
     if (mode === "register" && password.length < 10) {
       setError("Please choose a password of at least 10 characters.");
+      return;
+    }
+    if (mode === "register" && !agree) {
+      setError("Please read and accept the privacy notice to continue.");
       return;
     }
     setBusy(true);
@@ -111,6 +116,26 @@ export default function AuthScreen() {
               </ScrollView>
             </View>
           ) : null}
+          {mode === "register" ? (
+            <Checkbox testID="auth-privacy-checkbox" checked={agree} onToggle={() => setAgree(!agree)}>
+              <Txt variant="small" style={{ color: colors.onSurfaceSecondary }}>
+                I’ve read the privacy notice and understand how my information is used.
+              </Txt>
+            </Checkbox>
+          ) : null}
+          {mode === "register" ? (
+            <Pressable testID="auth-open-privacy" onPress={() => router.push("/privacy")}>
+              <Txt variant="small" color={colors.accentText}>
+                Read the privacy notice
+              </Txt>
+            </Pressable>
+          ) : (
+            <Pressable testID="auth-forgot-password" onPress={() => router.push({ pathname: "/forgot-password", params: { email } })}>
+              <Txt variant="small" color={colors.accentText}>
+                Forgot your password?
+              </Txt>
+            </Pressable>
+          )}
           {error ? (
             <View testID="auth-error" style={s.error}>
               <Feather name="alert-circle" size={16} color={colors.error} />

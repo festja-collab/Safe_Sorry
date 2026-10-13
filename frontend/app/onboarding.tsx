@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -55,6 +55,11 @@ export default function Onboarding() {
             variant="light"
             onPress={() => router.push({ pathname: "/auth", params: { mode: "login" } })}
           />
+          <Pressable testID="onboarding-firm-signup-link" onPress={() => router.push("/firm-signup")} style={{ paddingVertical: spacing.md, alignItems: "center" }}>
+            <Txt variant="small" color={colors.onSurfaceInverse}>
+              Are you an adviser? <Txt variant="small" color={colors.brandPrimary}>Set up your firm</Txt>
+            </Txt>
+          </Pressable>
         </Animated.View>
       </View>
     </View>
