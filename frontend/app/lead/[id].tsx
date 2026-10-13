@@ -77,6 +77,11 @@ export default function LeadDetail() {
             Requested {niceDate(l.created_at)}
             {l.preferred_time ? ` · Prefers ${l.preferred_time.toLowerCase()}` : ""}
           </Txt>
+          <Txt variant="small" testID="lead-source">
+            Came from: {l.source_label}
+            {l.source_code ? ` (code ${l.source_code})` : ""}
+            {l.heard_from ? ` · Heard via ${l.heard_from}` : ""}
+          </Txt>
         </View>
 
         <View style={{ gap: spacing.sm }}>

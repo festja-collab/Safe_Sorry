@@ -1,0 +1,33 @@
+{
+  "summary": "Iteration 5 verifies the 4 new features (change-password, firm admin add-adviser, forced first-login, ad landing + lead tracking). Backend: 15/15 pytest tests pass in /app/backend/tests/test_iteration5.py (xdist loadscope, ~15s). Change-password: wrong current -> 400, same password -> 400, <10 chars -> 422, success returns {token,user}, OLD token 401 on /auth/me (password_version revocation works), new token 200, re-login with new password 200; 5 wrong attempts -> 400 and 6th -> 429 (per-user namespace 'pwchange-fail'). Firm admins: POST /api/firm/advisers returns adviser_code like NAME-SFL and temporary_password; duplicate email -> 409; names colliding dedupe to NAME2-SFL (verified); non-admin client -> 403; GET /api/firm/advisers lists advisers with pending_setup=true for newly created ones. Forced first-login: new adviser logs in with temp pw -> user.must_change_password=true; /api/adviser/stats + /api/assessments return 403; /api/auth/me and /api/auth/change-password still work; after change must_change_password=false and /api/adviser/stats returns 200. Ad landing: GET /api/start/MARK-SFL?src=fb -> 200 HTML containing 'MARK-SFL-FB' and ad copy 'Most families never ask'; GET /api/start -> default adviser page with MARK-SFL; unknown code -> 404; src sanitised ('<fb!@#01234567890123>' -> stripped alphanumerics, truncated 12, HTML-safe); GET /api/invite/MARK-SFL now shows MARK-SFL-INV. Lead tracking: client registered with adviser_code 'MARK-SFL-FB' heard 'Facebook / Instagram' -> source_label 'Campaign: FB', source_code 'MARK-SFL-FB', heard_from preserved; 'MARK-SFL-INV' -> 'Invite link'; exact 'MARK-SFL' -> 'Adviser code'; blank -> 'No code'. /api/adviser/stats returns by_source and by_heard as sorted lists of {label,count}. Regression: tom@example.com / test1234 login works + /my-adviser returns MARK-SFL; Mark adviser dashboard + leads list OK. Frontend (390x844 mobile viewport): registered a fresh TEST_* client via /auth?mode=register (name/email/password/heard chip 'Facebook / Instagram' -> auth-heard-facebook-instagram selected); profile tab -> profile-change-password navigates to change-password-screen; wrong current password renders change-password-error 'Your current password isn't right' as expected. Not every UI chain fully E2E'd on web (Field input selectors flaky under Playwright web preview when using press_sequentially after reload) but all critical testIDs confirmed present on the DOM (adviser-home-screen, adviser-ad-links, adviser-campaign-fb, adviser-lead-sources, adviser-invite-client-button, firm-advisers-screen, firm-adviser-created, firm-adviser-temp-password, settings-manage-advisers, profile-adviser-settings, profile-change-password, change-password-screen, auth-heard-*). Cleanup: 6 TEST_* users + their leads + all rate_limits removed; Mark and Tom passwords and password_versions untouched (both pwdv=0).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration5.py",
+    "/app/test_reports/pytest/iteration5.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py now 820 lines - exceeds the 700-line soft limit flagged last iteration. Suggest splitting /firm/*, /adviser/*, /auth/*, /invite|/start|/compliance-pack landing routes into routers/ modules.",
+    "change_password uses conditional update with password_version in the filter -> atomic revocation with concurrent-change-safe 409 response. Nice.",
+    "add_firm_adviser code-dedup loop builds NAME2-SFL, NAME3-SFL... collision is bounded by the firm's adviser count; the regex strip + uppercase guards against unicode / punctuation names. Fine for realistic firm sizes.",
+    "resolve_code requires suffix to match ^[A-Z0-9]{1,12}$, matching the 12-char cap in ad_landing's re.sub(...)[:12] on src. Consistent cap on both sides.",
+    "source_label('INV','MARK-SFL-INV') -> 'Invite link'; source_label('','MARK-SFL') -> 'Adviser code'; good branch coverage.",
+    "/api/adviser/stats runs 3 Mongo scans per request (counts loop + by_source + by_heard). For a firm admin with many leads this could be slow; consider an aggregation pipeline when leads cross ~10k.",
+    "Lead model stores snapshot of signup_code / signup_source / heard_from at /leads POST time (from user doc) rather than linking live - correct for attribution auditability.",
+    "/api/start accepts no auth and renders a public HTML page using invite_page, which already escapes every interpolation. OK for public ad traffic."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration5.py (new, 15 tests)"
+  ],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "testID surface confirmed; full keystroke E2E partial — see context"},
+  "seed_data_creation": "No persistent seed data. All TEST_* users (6) and their leads removed; rate_limits cleared. Mark + Tom passwords and password_versions unchanged (both pwdv=0).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Reusable backend tests: /app/backend/tests/test_iteration5.py (6 test classes, 15 tests, ~15s under pytest-xdist loadscope). Fixture _clear_limits is session-scoped and clears db.rate_limits once at start — do NOT add per-test teardown clear, otherwise worker A clears while worker B's rate-limit test is mid-run (cross-worker race). The change-password rate-limit namespace is 'pwchange-fail' keyed by user.id (5/15min). Frontend testID map for iteration 5 additions: change-password-screen, change-password-{current,new,confirm,submit,error,success,back,logout}; firm-advisers-screen, firm-adviser-{name,email,title}-input, firm-adviser-add-button, firm-adviser-created, firm-adviser-temp-password, firm-adviser-share-details, firm-adviser-${code}; settings-manage-advisers; profile-change-password, profile-adviser-settings; adviser-ad-links, adviser-ad-link, adviser-campaign-{fb,ig,tt,gog,...}, adviser-lead-sources; lead-source; auth-heard-{my-adviser,friend-or-family,facebook-instagram,google,other}. The Field component in /app/frontend/src/components/ui wraps TextInput which renders as <input> on web - fill via `page.locator('[data-testid=\"X\"] input').first.press_sequentially(text, delay=10)` sometimes needs a prior click() for React Native Web to attach the controlled onChange. Rate limits: 5 registrations/IP/hour so unique X-Forwarded-For per request is mandatory in tests. ADVISER_CODE env is MARK-SFL (seeded). IOS_APP_URL/ANDROID_APP_URL still empty, so landing pages show 'Coming soon' store copy."
+}

@@ -77,6 +77,7 @@ export default function AdviserSettings() {
           {user?.is_firm_admin ? (
             <>
               <Txt variant="display">Firm details</Txt>
+              <Button testID="settings-manage-advisers" title="Manage advisers" variant="secondary" icon="users" onPress={() => router.push("/firm-advisers")} />
               <Txt variant="small">Shown to every client of your firm on the Adviser screen.</Txt>
               <View style={s.card}>
                 {firmField("name", "Firm name")}

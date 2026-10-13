@@ -30,7 +30,15 @@ export async function api<T>(path: string, opts: { method?: string; body?: unkno
   return data as T;
 }
 
-export type User = { id: string; email: string; name: string; role: "client" | "adviser"; is_firm_admin: boolean; adviser_code: string | null };
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+  role: "client" | "adviser";
+  is_firm_admin: boolean;
+  adviser_code: string | null;
+  must_change_password: boolean;
+};
 
 export type AdviserProfile = {
   id: string;
@@ -59,6 +67,9 @@ export type Lead = {
   status: LeadStatus;
   created_at: string;
   assessment_id: string | null;
+  source_label: string;
+  source_code: string;
+  heard_from: string;
   summary?: { headline: string; protected_pct: number; life_gap: number } | null;
   assessment?: Assessment | null;
 };

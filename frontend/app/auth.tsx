@@ -1,7 +1,7 @@
 import { Feather } from "@react-native-vector-icons/feather";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -14,6 +14,7 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<"login" | "register">(params.mode === "login" ? "login" : "register");
   const [name, setName] = useState("");
   const [adviserCode, setAdviserCode] = useState(params.code ?? "");
+  const [heard, setHeard] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -37,7 +38,7 @@ export default function AuthScreen() {
     setBusy(true);
     try {
       if (mode === "login") await signIn(email, password);
-      else await register(name, email, password, adviserCode);
+      else await register(name, email, password, adviserCode, heard);
       router.replace(mode === "register" ? "/assessment" : "/(tabs)");
     } catch (e: any) {
       setError(e.message ?? "Something went wrong");
@@ -96,6 +97,20 @@ export default function AuthScreen() {
               autoCapitalize="characters"
             />
           ) : null}
+          {mode === "register" ? (
+            <View style={{ gap: spacing.sm }}>
+              <Txt variant="label">How did you hear about us? (optional)</Txt>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ height: 56, flexGrow: 0 }} contentContainerStyle={{ gap: spacing.sm, alignItems: "center" }}>
+                {HEARD.map((h) => (
+                  <Pressable key={h} testID={`auth-heard-${h.toLowerCase().replace(/[^a-z]+/g, "-")}`} onPress={() => setHeard(heard === h ? "" : h)} style={[s.chip, heard === h && s.chipOn]}>
+                    <Txt variant="small" color={heard === h ? colors.onSurfaceInverse : colors.onSurface}>
+                      {h}
+                    </Txt>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
           {error ? (
             <View testID="auth-error" style={s.error}>
               <Feather name="alert-circle" size={16} color={colors.error} />
@@ -130,4 +145,8 @@ const useStyles = makeStyles((c) => ({
   content: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, paddingBottom: spacing.xl },
   error: { flexDirection: "row", gap: spacing.sm, alignItems: "center", backgroundColor: c.errorTint, padding: spacing.md, borderRadius: radius.md },
   footer: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, backgroundColor: c.surface },
+  chip: { height: 36, flexShrink: 0, paddingHorizontal: spacing.lg, borderRadius: radius.pill, backgroundColor: c.surfaceTertiary, justifyContent: "center" },
+  chipOn: { backgroundColor: c.surfaceInverse },
 }));
+
+const HEARD = ["My adviser", "Friend or family", "Facebook / Instagram", "Google", "Other"];

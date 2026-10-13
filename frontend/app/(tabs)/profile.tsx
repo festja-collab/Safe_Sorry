@@ -84,6 +84,11 @@ export default function Profile() {
             <Feather name="chevron-right" size={20} color={colors.muted} />
           </Pressable>
         )}
+        <Pressable testID="profile-change-password" onPress={() => router.push("/change-password")} style={s.row}>
+          <IconBadge name="lock" bg={colors.surfaceTertiary} fg={colors.onSurfaceTertiary} />
+          <Txt style={{ flex: 1, color: colors.onSurface }}>Change password</Txt>
+          <Feather name="chevron-right" size={20} color={colors.muted} />
+        </Pressable>
         <Button testID="profile-logout-button" title="Log out" variant="ghost" icon="log-out" onPress={async () => { await signOut(); router.replace("/onboarding"); }} />
       </ScrollView>
     </View>

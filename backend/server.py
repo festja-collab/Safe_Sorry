@@ -14,7 +14,9 @@ import re
 import json
 import uuid
 import asyncio
+import secrets
 import logging
+from pymongo.errors import DuplicateKeyError
 import bcrypt
 import jwt
 
@@ -79,6 +81,12 @@ class User(BaseDocument):
     calendly_url: str = ""
     lead_email: str = ""
     adviser_code: Optional[str] = None
+    password_version: int = 0
+    must_change_password: bool = False
+    # Attribution (clients)
+    signup_code: str = ""      # full code entered, e.g. MARK-SFL-FB
+    signup_source: str = ""    # suffix, e.g. FB / INV
+    heard_from: str = ""
 
 
 class Firm(BaseDocument):
@@ -95,6 +103,7 @@ class RegisterIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=10, max_length=128)
     adviser_code: str = Field(default="", max_length=40)
+    heard_from: str = Field(default="", max_length=40)
 
 
 class LoginIn(BaseModel):
@@ -158,6 +167,9 @@ class Lead(BaseDocument):
     adviser_id: Optional[str] = None
     firm_id: Optional[str] = None
     status: str = "new"                  # new | contacted | closed
+    source_code: str = ""
+    source: str = ""
+    heard_from: str = ""
     email_sent: bool = False
     created_at: str
 
@@ -177,27 +189,46 @@ LEADS_PER_DAY = 3                              # call-back requests per account
 DUMMY_HASH = bcrypt.hashpw(b"timing-equaliser", bcrypt.gensalt()).decode()
 
 
-def make_token(user_id: str) -> str:
+def make_token(user_id: str, pwdv: int = 0) -> str:
     now = datetime.now(timezone.utc)
-    return jwt.encode({"sub": user_id, "iat": now, "exp": now + timedelta(days=7)}, JWT_SECRET, algorithm="HS256")
+    return jwt.encode({"sub": user_id, "iat": now, "exp": now + timedelta(days=7), "pwdv": pwdv}, JWT_SECRET, algorithm="HS256")
 
 
 def public_user(u: User) -> dict:
     return {"id": u.id, "email": u.email, "name": u.name, "role": u.role, "is_firm_admin": u.is_firm_admin,
-            "adviser_code": u.adviser_code if u.role == "adviser" else None}
+            "adviser_code": u.adviser_code if u.role == "adviser" else None,
+            "must_change_password": u.must_change_password}
 
 
-async def current_user(c: HTTPAuthorizationCredentials = Depends(bearer)) -> User:
+def source_label(source: str, code: str) -> str:
+    if source == "INV":
+        return "Invite link"
+    if source:
+        return f"Campaign: {source}"
+    if code:
+        return "Adviser code"
+    return "No code"
+
+
+async def session_user(c: HTTPAuthorizationCredentials = Depends(bearer)) -> User:
+    """Valid session, even if a password change is still required."""
     if not c:
         raise HTTPException(401, "Not authenticated")
     try:
-        payload = jwt.decode(c.credentials, JWT_SECRET, algorithms=["HS256"])
+        payload = jwt.decode(c.credentials, JWT_SECRET, algorithms=["HS256"], options={"require": ["sub", "iat", "exp"]})
         doc = await db.users.find_one({"_id": ObjectId(payload["sub"])})
     except Exception:
         doc = None
-    if not doc:
+    # Tokens are revoked when the password changes (password_version bump)
+    if not doc or payload.get("pwdv", 0) != doc.get("password_version", 0):
         raise HTTPException(401, "Invalid or expired session")
     return User.from_mongo(doc)
+
+
+async def current_user(user: User = Depends(session_user)) -> User:
+    if user.must_change_password:
+        raise HTTPException(403, "Please set a new password to continue")
+    return user
 
 
 @api.get("/")
@@ -214,6 +245,21 @@ async def config():
 async def find_adviser_by_code(code: str) -> Optional[User]:
     doc = await db.users.find_one({"adviser_code": code.strip().upper(), "role": "adviser"})
     return User.from_mongo(doc) if doc else None
+
+
+async def resolve_code(code: str) -> tuple[Optional[User], str]:
+    """MARK-SFL -> (Mark, ""); MARK-SFL-FB -> (Mark, "FB") for campaign/invite tracking."""
+    c = code.strip().upper()
+    a = await find_adviser_by_code(c)
+    if a:
+        return a, ""
+    if "-" in c:
+        base, src = c.rsplit("-", 1)
+        if re.fullmatch(r"[A-Z0-9]{1,12}", src):
+            a = await find_adviser_by_code(base)
+            if a:
+                return a, src
+    return None, ""
 
 
 async def default_adviser() -> User:
@@ -254,18 +300,20 @@ async def register(body: RegisterIn, request: Request):
     email = body.email.lower()
     if await db.users.find_one({"email": email}):
         raise HTTPException(409, "An account with this email already exists")
+    source = ""
     if body.adviser_code.strip():
-        adviser = await find_adviser_by_code(body.adviser_code)
+        adviser, source = await resolve_code(body.adviser_code)
         if not adviser:
             raise HTTPException(400, "We couldn't find that adviser code. Please check it or leave it blank.")
     else:
         adviser = await default_adviser()
     pw = bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode()
     user = User(email=email, name=body.name.strip(), password_hash=pw, created_at=now_iso(),
-                adviser_id=adviser.id, firm_id=adviser.firm_id)
+                adviser_id=adviser.id, firm_id=adviser.firm_id, signup_code=body.adviser_code.strip().upper(),
+                signup_source=source, heard_from=body.heard_from.strip())
     res = await db.users.insert_one(user.to_mongo())
     user.id = str(res.inserted_id)
-    return {"token": make_token(user.id), "user": public_user(user)}
+    return {"token": make_token(user.id, 0), "user": public_user(user)}
 
 
 @api.post("/auth/login")
@@ -282,12 +330,38 @@ async def login(body: LoginIn, request: Request):
         await limiter.record(db.rate_limits, namespace="login-fail-email", key=email, window=LOGIN_WINDOW)
         raise HTTPException(401, "Incorrect email or password")
     user = User.from_mongo(doc)
-    return {"token": make_token(user.id), "user": public_user(user)}
+    return {"token": make_token(user.id, user.password_version), "user": public_user(user)}
 
 
 @api.get("/auth/me")
-async def me(user: User = Depends(current_user)):
+async def me(user: User = Depends(session_user)):
     return public_user(user)
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
+
+
+@api.post("/auth/change-password")
+async def change_password(body: ChangePasswordIn, user: User = Depends(session_user)):
+    msg = "Too many attempts. Please wait 15 minutes and try again."
+    await limiter.check(db.rate_limits, namespace="pwchange-fail", key=user.id, limit=5, window=LOGIN_WINDOW, message=msg)
+    if not bcrypt.checkpw(body.current_password.encode(), user.password_hash.encode()):
+        await limiter.record(db.rate_limits, namespace="pwchange-fail", key=user.id, window=LOGIN_WINDOW)
+        raise HTTPException(400, "Your current password isn't right")
+    if body.current_password == body.new_password:
+        raise HTTPException(400, "Please choose a different password from your current one")
+    res = await db.users.update_one(
+        {"_id": ObjectId(user.id), "password_version": user.password_version},
+        {"$set": {"password_hash": bcrypt.hashpw(body.new_password.encode(), bcrypt.gensalt()).decode(),
+                  "must_change_password": False}, "$inc": {"password_version": 1}},
+    )
+    if res.modified_count != 1:
+        raise HTTPException(409, "Your password was just changed. Please sign in again.")
+    fresh = User.from_mongo(await db.users.find_one({"_id": ObjectId(user.id)}))
+    # Old tokens (all devices) are now revoked; this device gets a fresh one
+    return {"token": make_token(fresh.id, fresh.password_version), "user": public_user(fresh)}
 
 
 def assessment_out(a: Assessment) -> dict:
@@ -445,6 +519,19 @@ async def invite_landing(code: str, name: str = ""):
     if not adviser:
         raise HTTPException(404, "Invite not found")
     return invite_page(app_name=APP_NAME, adviser=await adviser_profile(adviser), name=name.strip()[:40],
+                       code_display=f"{adviser.adviser_code}-INV", ad=False,
+                       ios_url=os.environ.get("IOS_APP_URL", ""), android_url=os.environ.get("ANDROID_APP_URL", ""))
+
+
+@api.get("/start", response_class=HTMLResponse)
+@api.get("/start/{code}", response_class=HTMLResponse)
+async def ad_landing(code: str = "", src: str = ""):
+    adviser = await find_adviser_by_code(code) if code else await default_adviser()
+    if not adviser:
+        raise HTTPException(404, "Page not found")
+    tag = re.sub(r"[^A-Z0-9]", "", src.upper())[:12]
+    return invite_page(app_name=APP_NAME, adviser=await adviser_profile(adviser), name="",
+                       code_display=f"{adviser.adviser_code}-{tag}" if tag else adviser.adviser_code, ad=True,
                        ios_url=os.environ.get("IOS_APP_URL", ""), android_url=os.environ.get("ANDROID_APP_URL", ""))
 
 
@@ -491,7 +578,8 @@ async def create_lead(body: LeadIn, user: User = Depends(current_user)):
     firm = await get_firm(adviser.firm_id)
     lead = Lead(user_id=user.id, email=user.email, name=body.name.strip(), phone=body.phone.strip(),
                 preferred_time=body.preferred_time, message=body.message, assessment_id=body.assessment_id,
-                adviser_id=adviser.id, firm_id=adviser.firm_id, created_at=now_iso())
+                adviser_id=adviser.id, firm_id=adviser.firm_id, created_at=now_iso(),
+                source_code=user.signup_code, source=user.signup_source, heard_from=user.heard_from)
     res = await db.leads.insert_one(lead.to_mongo())
     lead.id = str(res.inserted_id)
     try:
@@ -517,7 +605,7 @@ class LinkAdviserIn(BaseModel):
 async def link_adviser(body: LinkAdviserIn, user: User = Depends(current_user)):
     if user.role != "client":
         raise HTTPException(400, "Adviser accounts can't link to another adviser")
-    adviser = await find_adviser_by_code(body.code)
+    adviser, _ = await resolve_code(body.code)
     if not adviser:
         raise HTTPException(404, "We couldn't find that adviser code")
     await db.users.update_one({"_id": ObjectId(user.id)}, {"$set": {"adviser_id": adviser.id, "firm_id": adviser.firm_id}})
@@ -533,7 +621,8 @@ async def adviser_user(user: User = Depends(current_user)) -> User:
 def lead_out(d: dict) -> dict:
     lead = Lead.from_mongo(d)
     return {"id": lead.id, "name": lead.name, "email": lead.email, "phone": lead.phone, "preferred_time": lead.preferred_time,
-            "message": lead.message, "status": lead.status, "created_at": lead.created_at, "assessment_id": lead.assessment_id}
+            "message": lead.message, "status": lead.status, "created_at": lead.created_at, "assessment_id": lead.assessment_id,
+            "source_code": lead.source_code, "source_label": source_label(lead.source, lead.source_code), "heard_from": lead.heard_from}
 
 
 @api.get("/adviser/leads")
@@ -589,7 +678,63 @@ async def update_lead(lid: str, body: LeadStatusIn, me: User = Depends(adviser_u
 async def adviser_stats(me: User = Depends(adviser_user)):
     counts = {s: await db.leads.count_documents({"adviser_id": me.id, "status": s}) for s in ("new", "contacted", "closed")}
     clients = await db.users.count_documents({"adviser_id": me.id, "role": "client"})
-    return {**counts, "total": sum(counts.values()), "clients": clients}
+    by_source: dict = {}
+    async for d in db.leads.find({"adviser_id": me.id}, {"source": 1, "source_code": 1, "heard_from": 1}):
+        k = source_label(d.get("source", ""), d.get("source_code", ""))
+        by_source[k] = by_source.get(k, 0) + 1
+    by_heard: dict = {}
+    async for d in db.leads.find({"adviser_id": me.id, "heard_from": {"$nin": ["", None]}}, {"heard_from": 1}):
+        by_heard[d["heard_from"]] = by_heard.get(d["heard_from"], 0) + 1
+    return {**counts, "total": sum(counts.values()), "clients": clients,
+            "by_source": [{"label": k, "count": v} for k, v in sorted(by_source.items(), key=lambda x: -x[1])],
+            "by_heard": [{"label": k, "count": v} for k, v in sorted(by_heard.items(), key=lambda x: -x[1])]}
+
+
+class NewAdviserIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    email: EmailStr
+    title: str = Field(default="Protection Adviser", max_length=80)
+
+
+async def firm_admin(me: User = Depends(adviser_user)) -> User:
+    if not me.is_firm_admin or not me.firm_id:
+        raise HTTPException(403, "Only your firm's administrator can manage advisers")
+    return me
+
+
+@api.get("/firm/advisers")
+async def list_firm_advisers(me: User = Depends(firm_admin)):
+    out = []
+    async for d in db.users.find({"firm_id": me.firm_id, "role": "adviser"}).sort("created_at", 1):
+        a = User.from_mongo(d)
+        out.append({"id": a.id, "name": a.name, "email": a.email, "title": a.title, "adviser_code": a.adviser_code,
+                    "is_firm_admin": a.is_firm_admin, "pending_setup": a.must_change_password,
+                    "leads": await db.leads.count_documents({"adviser_id": a.id})})
+    return out
+
+
+@api.post("/firm/advisers")
+async def add_firm_adviser(body: NewAdviserIn, me: User = Depends(firm_admin)):
+    email = str(body.email).lower()
+    if await db.users.find_one({"email": email}):
+        raise HTTPException(409, "Someone already has an account with this email")
+    firm = await get_firm(me.firm_id)
+    first = re.sub(r"[^A-Z0-9]", "", body.name.strip().split(" ")[0].upper())[:10] or "ADVISER"
+    base = f"{first}-{firm.code.upper()}"
+    code, n = base, 2
+    while await db.users.find_one({"adviser_code": code}):
+        code, n = f"{first}{n}-{firm.code.upper()}", n + 1
+    temp = secrets.token_urlsafe(12)
+    a = User(email=email, name=body.name.strip(), created_at=now_iso(),
+             password_hash=bcrypt.hashpw(temp.encode(), bcrypt.gensalt()).decode(),
+             role="adviser", firm_id=me.firm_id, title=body.title, lead_email=email, adviser_code=code,
+             must_change_password=True)
+    try:
+        res = await db.users.insert_one(a.to_mongo())
+    except DuplicateKeyError:
+        raise HTTPException(409, "Someone already has an account with this email")
+    # Temporary password is returned once and never stored in plain text
+    return {"id": str(res.inserted_id), "name": a.name, "email": email, "adviser_code": code, "temporary_password": temp}
 
 
 class AdviserProfileIn(BaseModel):

@@ -8,7 +8,8 @@ type AuthCtx = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, adviserCode?: string) => Promise<void>;
+  register: (name: string, email: string, password: string, adviserCode?: string, heardFrom?: string) => Promise<void>;
+  applySession: (r: { token: string; user: User }) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -43,11 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signIn: async (email, password) =>
       finish(await api("/auth/login", { method: "POST", body: { email: email.trim(), password } })),
-    register: async (name, email, password, adviserCode) =>
+    applySession: finish,
+    register: async (name, email, password, adviserCode, heardFrom) =>
       finish(
         await api("/auth/register", {
           method: "POST",
-          body: { name: name.trim(), email: email.trim(), password, adviser_code: (adviserCode ?? "").trim() },
+          body: { name: name.trim(), email: email.trim(), password, adviser_code: (adviserCode ?? "").trim(), heard_from: heardFrom ?? "" },
         }),
       ),
     signOut: async () => {

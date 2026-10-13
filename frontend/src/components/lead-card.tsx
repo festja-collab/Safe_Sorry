@@ -43,8 +43,7 @@ export function LeadCard({ lead }: { lead: Lead }) {
       ) : null}
       <View style={s.row}>
         <Txt variant="small">
-          {timeAgo(lead.created_at)}
-          {lead.preferred_time ? ` · ${lead.preferred_time}` : ""}
+          {timeAgo(lead.created_at)} · {lead.source_label}
         </Txt>
         <View style={{ flex: 1 }} />
         {lead.summary ? (

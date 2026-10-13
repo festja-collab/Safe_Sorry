@@ -58,3 +58,9 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 ## Update (Oct 2026) — Invite a client
 - Adviser Home → "Invite a client" (/invite): name, 3 message templates, optional note, live preview, native share sheet
 - Public landing page GET /api/invite/{code}?name= (backend/invite.py): adviser photo, code, store buttons (IOS_APP_URL / ANDROID_APP_URL env; "Coming soon" when empty), FCA line
+
+## Update (Oct 2026) — Password change, ad landing, lead tracking, add advisers
+- POST /api/auth/change-password (pwdv claim revokes old tokens; returns fresh token); forced change when must_change_password (403 on normal routes, tabs redirect to /change-password)
+- Ad landing page GET /api/start[/{code}]?src=FB shows code MARK-SFL-FB; invite page shows MARK-SFL-INV
+- Codes with suffix resolve to adviser + source; users store signup_code/signup_source/heard_from ("How did you hear about us?" chips); leads snapshot source; lead card/detail show source; stats by_source/by_heard on adviser dashboard; ad link generator with campaign chips
+- Firm admin: GET/POST /api/firm/advisers (auto code FIRST-FIRMCODE, one-time temporary password, forced change on first login); screen /firm-advisers from Adviser settings

@@ -2,7 +2,7 @@
 from html import escape
 
 
-def invite_page(*, app_name: str, adviser: dict, name: str, ios_url: str, android_url: str) -> str:
+def invite_page(*, app_name: str, adviser: dict, name: str, code_display: str, ad: bool, ios_url: str, android_url: str) -> str:
     e = escape
     first = e(adviser["name"].split(" ")[0])
     hello = f"Hi {e(name)}," if name else "Hi,"
@@ -14,6 +14,20 @@ def invite_page(*, app_name: str, adviser: dict, name: str, ios_url: str, androi
         stores += f'<a class="btn" href="{e(android_url)}">Get it on Google Play</a>'
     if not stores:
         stores = '<p class="soon">Coming soon to the App Store and Google Play.</p>'
+    if ad:
+        body = (
+            "<p><b>Most families never ask the question. This app answers it — gently, in five minutes.</b></p>"
+            "<ul style='line-height:1.8;font-size:16px'><li>See the month your family's money would run out</li>"
+            "<li>Find out what the state would (and wouldn't) pay</li><li>Learn which gaps matter for your children's future</li>"
+            "<li>Free, private, no sales calls unless you ask</li></ul>"
+            "<p>When you sign up, enter this code to get your report:</p>"
+        )
+    else:
+        body = (
+            f"<p>{hello}</p><p>Thanks for chatting with me. If you'd like to see, in real terms, what your family would face "
+            "if you couldn't be there — and whether there's a gap worth closing — this app walks you through it in about five minutes.</p>"
+            "<p>When you sign up, enter my code so I can help if you want me to:</p>"
+        )
     reg = ""
     if adviser.get("firm_name"):
         reg = f'{e(adviser["firm_name"])} (FRN {e(adviser["fca_number"])})'
@@ -38,10 +52,8 @@ p{{line-height:1.6;font-size:17px}} .code{{font-family:Arial,sans-serif;font-siz
 <div>A gentle five-minute check. No sales, no obligation.</div></div></div>
 <div class="main"><div class="card">
 <div class="who">{photo}<div><b>{e(adviser["name"])}</b><br><span class="small">{e(adviser.get("title", ""))}</span></div></div>
-<p>{hello}</p>
-<p>Thanks for chatting with me. If you'd like to see, in real terms, what your family would face if you couldn't be there — and whether there's a gap worth closing — this app walks you through it in about five minutes.</p>
-<p>When you sign up, enter my code so I can help if you want me to:</p>
-<div class="code">{e(adviser.get("adviser_code") or "")}</div>
+{body}
+<div class="code">{e(code_display)}</div>
 {stores}
 <p class="small">Estimates only, based on current UK tax and benefit rates. Not financial advice. {reg}</p>
 </div></div></body></html>"""

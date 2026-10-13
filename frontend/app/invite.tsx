@@ -45,7 +45,7 @@ export default function Invite() {
   const clientName = name.trim() || "there";
   const link = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/invite/${user?.adviser_code}${name.trim() ? `?name=${encodeURIComponent(name.trim())}` : ""}`;
   const body = TEMPLATES.find((t) => t.id === tpl)!.text(clientName);
-  const message = `${body}${note.trim() ? `\n\n${note.trim()}` : ""}\n\n${link}\n\nUse my code ${user?.adviser_code} when you sign up.\n${first}`;
+  const message = `${body}${note.trim() ? `\n\n${note.trim()}` : ""}\n\n${link}\n\nUse my code ${user?.adviser_code}-INV when you sign up.\n${first}`;
 
   const send = async () => {
     const r = await Share.share({ message });

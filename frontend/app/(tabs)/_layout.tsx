@@ -10,6 +10,7 @@ import { colors, fonts } from "@/src/theme";
 export default function TabsLayout() {
   const { user, loading } = useAuth();
   if (!loading && !user) return <Redirect href="/onboarding" />;
+  if (user?.must_change_password) return <Redirect href="/change-password" />;
   const isAdviser = user?.role === "adviser";
 
   if (usesNativeTabs) {
