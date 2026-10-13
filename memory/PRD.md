@@ -88,3 +88,7 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 
 ## Update (Oct 2026) — Management presentation
 - GET /api/presentation (backend/presentation.py): 11-slide browser deck for SFL management (SFL only, no resale). Arrow keys / swipe / buttons, full-screen, Print → Save as PDF = 1 slide per A4 landscape page
+
+## Update (Oct 2026) — Naming & logo concepts
+- "Safe > Sorry" = "better safe than sorry". Email sender name now EMAIL_FROM_NAME="Better Safe Than Sorry" (">" not allowed in sender)
+- GET /api/logo-concepts (backend/logo_concepts.py): 5 SVG concepts (A wordmark, B shield, C family roof, D S>S seal, E app icon), navy/gold. Not applied to app yet; user's own draft not received (no asset uploaded)
