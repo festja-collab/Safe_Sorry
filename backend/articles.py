@@ -1,0 +1,68 @@
+ARTICLES = [
+    {
+        "slug": "what-is-life-insurance",
+        "category": "Life cover",
+        "title": "Life insurance, explained like a friend would",
+        "excerpt": "It isn't really about you. It's a promise that the people you love keep their home, their plans and their peace.",
+        "read_minutes": 3,
+        "body": [
+            "Life insurance pays a lump sum (or a monthly income) to your family if you die while the policy is active. That's the whole idea — simple, but it changes everything for the people left behind.",
+            "Most families use it to clear the mortgage, replace lost income while children grow up, and give the surviving partner time to grieve without panicking about bills.",
+            "Level term cover pays a fixed amount. Decreasing term shrinks alongside a repayment mortgage and is usually cheaper. Family income benefit pays a monthly income instead of one big sum — often the most affordable way to protect young children.",
+            "A quick rule of thumb: enough to clear your debts, plus enough to replace your take-home pay until your youngest child leaves school. Your Safe > Sorry report works this out for you.",
+            "Tip: write your policy in trust. It keeps the payout out of your estate, can avoid inheritance tax and usually gets money to your family much faster.",
+        ],
+    },
+    {
+        "slug": "income-protection",
+        "category": "Income protection",
+        "title": "Your income is your biggest asset",
+        "excerpt": "You insure your phone and your car. What about the thing that pays for both?",
+        "read_minutes": 4,
+        "body": [
+            "Income protection pays you a monthly income — typically up to 60% of your gross salary — if illness or injury stops you working. It keeps paying until you recover, retire or the policy ends.",
+            "You'd be far more likely to be off work long-term than to die before retirement. Back problems, mental health and cancer are among the most common reasons for claims.",
+            "Statutory Sick Pay is around £118.75 a week, for up to 28 weeks. For most households, that wouldn't even cover the mortgage.",
+            "Check your employer's sick pay first. Then choose a 'deferred period' (how long you wait before payments start) that matches it — a longer wait makes cover cheaper.",
+            "If you're self-employed, there's no sick pay at all. Income protection is often the single most important policy you can own.",
+        ],
+    },
+    {
+        "slug": "critical-illness",
+        "category": "Critical illness",
+        "title": "Surviving is the plan. Paying for it shouldn't be the worry.",
+        "excerpt": "More people survive cancer, heart attacks and strokes than ever. Recovery takes time — and money.",
+        "read_minutes": 3,
+        "body": [
+            "Critical illness cover pays a tax-free lump sum if you're diagnosed with a specified serious condition such as cancer, a heart attack or a stroke.",
+            "It doesn't matter whether you can still work. The money is yours to use: pay down the mortgage, adapt your home, fund treatment, or simply let your partner take time off to be with you.",
+            "A common approach is one to two years of income, or enough to clear your mortgage — whichever matters most to your family.",
+            "Policies differ a lot in what they cover. This is where a good adviser earns their keep.",
+        ],
+    },
+    {
+        "slug": "state-support",
+        "category": "The safety net",
+        "title": "What the state will — and won't — do",
+        "excerpt": "Many people assume the government would step in. The reality is a lot thinner than most of us think.",
+        "read_minutes": 4,
+        "body": [
+            "If your spouse or civil partner dies, you may get Bereavement Support Payment: £3,500 plus £350 a month for 18 months if you have children, or £2,500 plus £100 a month without.",
+            "If you live together but aren't married, you get nothing. No matter how many years you've shared a home or raised children together.",
+            "If you can't work, Statutory Sick Pay lasts up to 28 weeks. After that, Employment and Support Allowance is roughly £92 a week — and depends on strict assessments.",
+            "Universal Credit may help, but savings over £6,000 reduce it, and over £16,000 usually stop it entirely.",
+        ],
+    },
+    {
+        "slug": "writing-in-trust",
+        "category": "Practical steps",
+        "title": "Why 'in trust' might be the most important two words",
+        "excerpt": "A free, five-minute form that can get money to your family in weeks rather than months.",
+        "read_minutes": 2,
+        "body": [
+            "Without a trust, a life insurance payout goes into your estate. That means waiting for probate — often six to twelve months — and possibly paying inheritance tax.",
+            "With a trust, the money goes straight to the people you choose, usually within weeks.",
+            "Most insurers offer trust forms for free. Your adviser can help you set one up when you take out cover, or add one to an existing policy.",
+        ],
+    },
+]

@@ -1,0 +1,180 @@
+{
+  "app_name": "Safe > Sorry",
+  "personality": "8 Hand-Drawn / Journal",
+  "personality_one_liner": "A deeply human, emotionally resonant storytelling experience that feels like a reflective journal rather than a clinical calculator.",
+  "color": {
+    "surface": "#FDFBF7",
+    "onSurface": "#2C2A28",
+    "surfaceSecondary": "#F4F0EA",
+    "onSurfaceSecondary": "#3A3835",
+    "surfaceTertiary": "#EAE4D9",
+    "onSurfaceTertiary": "#4B4844",
+    "surfaceInverse": "#343D35",
+    "onSurfaceInverse": "#FDFBF7",
+    "brand": "#A2A995",
+    "onBrand": "#22251F",
+    "brandPrimary": "#D18E70",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#96A192",
+    "onBrandSecondary": "#FFFFFF",
+    "brandTertiary": "#E2D9C8",
+    "onBrandTertiary": "#3A3835",
+    "success": "#7A9374",
+    "onSuccess": "#FFFFFF",
+    "warning": "#D9A05B",
+    "onWarning": "#FFFFFF",
+    "error": "#C06C62",
+    "onError": "#FFFFFF",
+    "info": "#8B9BA6",
+    "onInfo": "#FFFFFF",
+    "border": "#E1DBCF",
+    "borderStrong": "#C2B9A9",
+    "divider": "#EFEBE3",
+    "muted": "#7D7973"
+  },
+  "typography": {
+    "displayFontFamily": "Fraunces",
+    "textFontFamily": "Quicksand",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous, soft flowing layouts. Let whitespace breathe like margins in a notebook. Avoid dense, cramped dashboard-style groupings.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "0",
+  "navigation": "bottom_tabs",
+  "icon_set": "Feather",
+  "glassmorphism": {
+    "enabled": false,
+    "do's": [
+      "Skip glass entirely as it clashes with the paper-like, hand-drawn aesthetic."
+    ],
+    "dont's": [
+      "Do not use blur or frosted glass. Rely on soft tints, paper textures, and gentle gradients instead."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Onboarding",
+      "purpose": "Sets an emotional hook right away using warm family photography and narrative-led copy before jumping into the app.",
+      "states": {
+        "loading": "Centered soft spinner on a warm off-white background.",
+        "empty": "N/A",
+        "error": "Readable message on surfaceSecondary + Retry button."
+      },
+      "layout": "Full-bleed imagery of a warm family home lifestyle. Ensure the image has a vertical gradient-to-dark scrim (transparent to surfaceInverse) starting at 50% so that the overlaid Fraunces text and the primary CTA are perfectly readable."
+    },
+    {
+      "name": "Auth",
+      "purpose": "Provides entry into the app, saving their progress.",
+      "states": {
+        "loading": "Centered soft spinner.",
+        "empty": "N/A",
+        "error": "Soft red warning message + Retry button."
+      },
+      "layout": "Clean, soft, single-column paper-like layout. Inputs use surfaceTertiary background with no borders. Submit button sticky at the bottom."
+    },
+    {
+      "name": "Assessment Questionnaire",
+      "purpose": "Gathers details about family, income, and debts iteratively without overwhelming the user.",
+      "states": {
+        "loading": "Centered soft spinner.",
+        "empty": "N/A",
+        "error": "Error message with soft retry button."
+      },
+      "layout": "Conditional branching: display one question per screen. A soft progression bar sits at the top. Use large touch targets (pills/cards) for answers instead of small radio buttons. The 'Continue' CTA is sticky at the bottom."
+    },
+    {
+      "name": "Your Family's Story (Report)",
+      "purpose": "Translates numbers into emotional real-world impacts, showing a timeline of when money runs out.",
+      "states": {
+        "loading": "Generating your story... with a soft fading animation.",
+        "empty": "N/A",
+        "error": "Failed to generate report. Retry button."
+      },
+      "layout": "A hybrid narrative timeline. Start with a headline insight (e.g., 'Your family is protected for 3 years, but...'). Follow with a vertical timeline rail showing real family milestones (e.g., Kids' Uni, Mortgage) plotted against a fading 'Savings Runway'. The AI narrative should be styled like a softly highlighted paper card. End with breakdown cards (Life, Income, Critical Illness) in surfaceSecondary."
+    },
+    {
+      "name": "Learn",
+      "purpose": "An educational archive explaining insurance concepts simply.",
+      "states": {
+        "loading": "Skeleton loading lines on surfaceSecondary.",
+        "empty": "Illustration of an empty notebook page with 'No articles found'.",
+        "error": "Error message + Retry button."
+      },
+      "layout": "Editorial layout with generous vertical spacing. Use full-width sections and quiet dividers. Large Fraunces titles for article cards, with short Quicksand excerpts."
+    },
+    {
+      "name": "Talk to an Adviser",
+      "purpose": "Connects users with a human adviser via a lead form and a Calendly scheduling link.",
+      "states": {
+        "loading": "Centered soft spinner.",
+        "empty": "N/A",
+        "error": "Error message + Retry button."
+      },
+      "layout": "Profile photo of the friendly adviser at the top in a circle or soft-corner rectangle. Humanized contact form on a surfaceSecondary card, followed by a 'Book a call' sticky primary button."
+    },
+    {
+      "name": "Profile",
+      "purpose": "Houses saved assessments and account settings.",
+      "states": {
+        "loading": "Centered soft spinner.",
+        "empty": "Illustration of a closed folder + 'No saved assessments yet'.",
+        "error": "Error message + Retry button."
+      },
+      "layout": "List items with leading icons inside brandTertiary tinted rounded squares. Minimum 56pt tappable height. Clear log-out button."
+    }
+  ],
+  "images": {
+    "onboarding_hero": {
+      "url": "https://images.unsplash.com/photo-1770871821382-60ea99b0a941?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA0MTJ8MHwxfHNlYXJjaHwzfHx3YXJtJTIwZmFtaWx5JTIwaG9tZSUyMGxpZmVzdHlsZXxlbnwwfHx8fDE3OTE4ODE5Njh8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "A happy family running together in a sunlit garden"
+    },
+    "report_hero": {
+      "url": "https://images.unsplash.com/photo-1492269815085-88eb3ffe14e5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwyfHxmYXRoZXIlMjBhbmQlMjBjaGlsZCUyMGVtb3Rpb25hbHxlbnwwfHx8fDE3OTE4ODE5Njh8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Man holding child's hand emotionally"
+    },
+    "adviser_portrait": {
+      "url": "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODh8MHwxfHNlYXJjaHwyfHxmaW5hbmNpYWwlMjBhZHZpc2VyJTIwZnJpZW5kbHklMjBwb3J0cmFpdHxlbnwwfHx8fDE3OTE4ODE5Njh8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Friendly female financial adviser portrait"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly adhere to the earthy, hand-drawn color palette: soft creams, sage green, clay, and charcoal text. NO purples, NO blues, NO pure blacks.",
+    "The typography is a critical part of the UI. Use 'Fraunces' for editorial, emotional headings and 'Quicksand' for soft, legible body text. Do not exceed font-weight 500 for any text.",
+    "Do not use blur or glassmorphism. It clashes with the 'Hand-drawn / Journal' personality. Use soft tints (surfaceSecondary, surfaceTertiary) instead of shadows or glass.",
+    "For the multi-step Gap Assessment Questionnaire, present ONE question per screen. Do not bundle all questions into a single long scrolling form. Provide a soft progress bar.",
+    "The 'Your Family's Story' report MUST be a hybrid narrative timeline layout. It should visually plot the 'savings runway' (money running out in month X) against life milestones, rather than just spitting out a raw number.",
+    "Any text overlaid on full-bleed images (like Onboarding) MUST use a vertical gradient-to-dark scrim (transparent to surfaceInverse) to ensure text readability."
+  ]
+}
