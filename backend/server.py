@@ -30,6 +30,7 @@ from compliance_pack import build_pack  # noqa: E402
 from invite import invite_page  # noqa: E402
 from presentation import build_presentation  # noqa: E402
 from logo_concepts import concept_sheet  # noqa: E402
+from try_page import try_page  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from privacy import PRIVACY_VERSION, privacy_sections  # noqa: E402
 import hashlib  # noqa: E402
@@ -647,6 +648,13 @@ async def compliance_pack():
 @api.get("/logo-concepts", response_class=HTMLResponse)
 async def logo_concepts():
     return concept_sheet()
+
+
+@api.get("/try", response_class=HTMLResponse)
+async def try_app(request: Request):
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
+    proto = request.headers.get("x-forwarded-proto", "https").split(",")[0]
+    return try_page(app_name=APP_NAME, url=f"{proto}://{host.split(',')[0]}/")
 
 
 @api.get("/presentation", response_class=HTMLResponse)

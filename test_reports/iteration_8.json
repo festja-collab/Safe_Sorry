@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 8 verifies the new public GET /api/try QR-code page (fix for the exp:// QR bug) plus light regression on /api/invite/MARK-SFL, /api/presentation, /api/logo-concepts. Backend: 9/9 pytest tests pass in /app/backend/tests/test_try_qr.py (~1.1s). /api/try returns 200 HTML with inline <svg> QR, logo <img src='/api/static/logos/logo_dark_transparent.png'> (also fetched 200, image/*, 805px wide), and an 'Or open it here' <a> whose href is exactly 'https://protect-me-17.preview.emergentagent.com/' with no exp:// scheme anywhere in the page. The inline SVG was rasterized to PNG via cairosvg, decoded with pyzbar, and the payload equals that same https URL - the key assertion for the reported bug. Regression: /api/invite/MARK-SFL, /api/presentation and /api/logo-concepts all return 200 HTML. Frontend (390x844 mobile viewport): /api/try renders correctly - Safe>Sorry logo, 'Try the app on your phone' heading, QR code with white rounded card, and gold 'Or open it here' button with href https://protect-me-17.preview.emergentagent.com/. Navigating to that decoded URL on the same mobile viewport loads the Expo onboarding screen with both data-testid='onboarding-screen' and data-testid='onboarding-logo' present ('The people you love deserve more than it'll be fine' hero copy, 'Begin your family check' primary CTA, 'I already have an account' secondary CTA, 'Set up your firm' link). End-to-end: a phone's normal camera scanning this QR will land on the Expo web app, not on an exp:// link.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_try_qr.py",
+    "/app/test_reports/pytest/iteration8.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py:653-657 try_app: derives host/proto from x-forwarded-host/x-forwarded-proto with sensible fallbacks ('https' default, split on comma). Correct for this ingress; a direct hit without those headers would still yield 'https://<host-header>/'. No issue found.",
+    "try_page.py:9 segno.make(url, error='m') with svg_inline(scale=8, border=2): QR renders at 240x240 CSS pixels (fixed in .qr svg CSS). Error correction 'M' (~15%) is sufficient for a 55-char URL with the preview logo overlay absent. No issue found.",
+    "try_page.py:19 logo src is the relative path /api/static/logos/logo_dark_transparent.png - works because /api/try is served from the same origin. Mobile camera apps that open the href will load the Expo web app directly, bypassing /api/try, so no cross-origin concern.",
+    "iteration-7 open items (server.py >1000 lines, DuplicateKeyError race in /api/firms/register firm insert) still stand but are unrelated to this iteration's scope."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_try_qr.py (new, 9 tests, 2 classes)"
+  ],
+  "success_rate": {"backend": "100% (9/9 iteration-8)", "frontend": "100% (/api/try page renders QR + logo + 'Or open it here' button correctly; decoded URL loads onboarding on 390x844 mobile viewport with onboarding-screen + onboarding-logo testIDs present)"},
+  "seed_data_creation": "None - all tested endpoints are public.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Reusable backend tests: /app/backend/tests/test_try_qr.py (2 classes, 9 tests, ~1.1s). Dependencies: pyzbar (requires system libzbar0 - `apt-get install -y libzbar0`), cairosvg (installed via pip; brings cairocffi, cssselect2, tinycss2, defusedxml, webencodings), Pillow. The QR decode test extracts the inline <svg> from /api/try, converts to PNG via cairosvg at 600x600, 2x upscales via Pillow, decodes with pyzbar, and asserts payload == 'https://protect-me-17.preview.emergentagent.com/'. The 'Or open it here' href regex matches `href=\"...\" ...>Or open it here`. For future iterations, consider adding a magic-byte sniff on the logo PNG response and verifying X-Forwarded-* header behaviour by hitting the backend internally with custom headers (not currently covered). All iteration 7 regressions (firm signup, logo upload, marketing tips) were NOT retested this round - scope was limited to the QR fix per the review request."
+}
