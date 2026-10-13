@@ -40,7 +40,7 @@ def new_user():
             "https://protect-me-17.preview.emergentagent.com").rstrip("/")
     email = f"test_{uuid.uuid4().hex[:10]}@example.com"
     r = requests.post(f"{base}/api/auth/register",
-                      json={"name": "TEST User", "email": email, "password": "secret123"})
+                      json={"name": "TEST User", "email": email, "password": "secret1234"})
     assert r.status_code == 200, r.text
     data = r.json()
     assert data["user"]["email"] == email
@@ -50,7 +50,7 @@ def new_user():
 
 def test_register_duplicate(api, base_url, new_user):
     r = api.post(f"{base_url}/api/auth/register",
-                 json={"name": "x", "email": new_user["email"], "password": "secret123"})
+                 json={"name": "x", "email": new_user["email"], "password": "secret1234"})
     assert r.status_code == 409
 
 
@@ -132,7 +132,7 @@ def test_assessment_ownership(api, base_url, assessment):
     import requests
     email = f"other_{uuid.uuid4().hex[:8]}@example.com"
     reg = requests.post(f"{base_url}/api/auth/register",
-                        json={"name": "Other", "email": email, "password": "secret123"})
+                        json={"name": "Other", "email": email, "password": "secret1234"})
     assert reg.status_code == 200
     tok = reg.json()["token"]
     r = api.get(f"{base_url}/api/assessments/{assessment['id']}",

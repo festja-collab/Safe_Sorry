@@ -1,0 +1,35 @@
+{
+  "summary": "Iteration 2 verifies the new abuse-protection layer. All 29 pytest tests pass: 17 regression (test_safe_sorry.py, passwords bumped to 10 chars) + 12 new rate-limit tests in test_abuse_limits.py. Verified: 8/9-char register -> 422; 10-char ok; legacy tom@example.com/test1234 login still 200; JWT exp-iat == 7 days; 6th failed login per email -> 429 with Retry-After, and correct password blocked while locked; 11th failed login per IP (10 unique emails, same X-Forwarded-For) -> 429; 6th register per IP within hour -> 429; 6th POST /api/assessments per user/day -> 429 with 'limit of 5 family checks' detail; 4th POST /api/leads per user/day -> 429; AI-story quota verified safely by hitting tom's CACHED story 6x -> all 200 (quota only consumed on new generations, as per spec - avoided burning LLM credits). Frontend UI check on mobile viewport 390x844: register with 8-char password shows 'Please choose a password of at least 10 characters.' inside auth-error container; 10+ char password registers successfully and routes to /assessment. rate_limits collection cleared at start AND end of module so tom is never locked out.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_abuse_limits.py",
+    "/app/backend/tests/test_safe_sorry.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/abuse_limits.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "limiter.take uses a two-phase upsert that cleanly handles the window-full race (DuplicateKeyError fallback) - good.",
+    "login endpoint uses limiter.check (non-consuming) before verifying creds, then limiter.record on failure - correct pattern that prevents correct-password-after-lockout bypass, confirmed in test_login_fail_per_email_locks_at_6th_attempt.",
+    "rate_limits TTL index via expireAfterSeconds=0 on expires_at - good self-cleanup.",
+    "DUMMY_HASH used for timing-equaliser on unknown email - good constant-time behaviour.",
+    "Still uses deprecated FastAPI @app.on_event('startup'/'shutdown') - minor, consider lifespan context manager."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_abuse_limits.py (new)",
+    "/app/backend/tests/test_safe_sorry.py (passwords bumped secret123 -> secret1234 in 3 places)"
+  ],
+  "success_rate": {"backend": "100% (29/29)", "frontend": "100% (register 422 UI + 10+ char happy path)"},
+  "seed_data_creation": "Created ~15 TEST_* / test_* users across the register-per-IP and brute-force tests. All on unique X-Forwarded-For IPs. rate_limits collection cleared at end so tom@example.com is not locked out.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Rate-limit counters live in Mongo collection `rate_limits` keyed by namespace:key:window-start. Always use a unique X-Forwarded-For per test flow and unique emails. The module-scope fixture _clear_rate_limits in test_abuse_limits.py wipes the collection before and after. Namespaces in use: register-ip (5/hour), login-fail-ip (10/15min), login-fail-email (5/15min), assess-user (5/day), story-user (5/day), lead-user (3/day). Cached /story returns without consuming story-user quota - do NOT trigger more than ~1-2 fresh story generations in tests (LLM credits). Passwords must be >= 10 chars for /auth/register; tom's legacy 8-char password still works for /auth/login only.",
+  "rca_of_issue": ""
+}

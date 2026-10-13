@@ -53,7 +53,7 @@ function StoryCard({ id, initial }: { id: string; initial: Story | null }) {
   const story = initial ?? q.data;
 
   if (!story && q.isError)
-    return <ErrorState testID="story-error" message="We couldn’t write your story just now." onRetry={() => q.refetch()} />;
+    return <ErrorState testID="story-error" message={(q.error as Error).message || "We couldn’t write your story just now."} onRetry={() => q.refetch()} />;
 
   return (
     <View style={s.storyCard} testID="story-card">

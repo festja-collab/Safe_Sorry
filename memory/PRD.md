@@ -38,3 +38,8 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - AR disclosure footer on Adviser tab
 - Pending: firm compliance sign-off before publishing
 - Theme switched to SFL-inspired white/navy (#223342)/gold (#BF9B30)
+
+## Update (Oct 2026) — Security hardening
+- Mongo-backed rate limiter (backend/limiter.py, TTL collection rate_limits)
+- Limits: failed logins 5/email & 10/IP per 15 min; registrations 5/IP/hour; assessments 5/user/day; AI stories 5/user/day; leads 3/user/day
+- Password min 10 chars for new accounts; JWT lifetime 7 days; constant-time login (dummy hash)

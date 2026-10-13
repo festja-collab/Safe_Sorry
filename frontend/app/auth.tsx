@@ -29,6 +29,10 @@ export default function AuthScreen() {
       setError("Please fill in every field.");
       return;
     }
+    if (mode === "register" && password.length < 10) {
+      setError("Please choose a password of at least 10 characters.");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "login") await signIn(email, password);
@@ -77,7 +81,7 @@ export default function AuthScreen() {
             label="Password"
             value={password}
             onChangeText={setPassword}
-            placeholder="At least 6 characters"
+            placeholder={mode === "register" ? "At least 10 characters" : "Your password"}
             secureTextEntry
             onSubmitEditing={submit}
           />

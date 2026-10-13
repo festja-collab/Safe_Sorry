@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -24,6 +24,7 @@ load_dotenv(ROOT_DIR / '.env')
 from calc import compute  # noqa: E402
 from articles import ARTICLES  # noqa: E402
 from emailer import send_email  # noqa: E402
+import limiter  # noqa: E402
 from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone  # noqa: E402
 
 client = AsyncIOMotorClient(os.environ['MONGO_URL'])
@@ -68,7 +69,7 @@ class User(BaseDocument):
 class RegisterIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     email: EmailStr
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=10, max_length=128)
 
 
 class LoginIn(BaseModel):
@@ -137,9 +138,20 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# ---- Abuse limits ----
+DAY = 86400
+LOGIN_WINDOW = 15 * 60
+LOGIN_IP_LIMIT, LOGIN_EMAIL_LIMIT = 10, 5      # failed logins per 15 min
+REGISTER_IP_LIMIT = 5                          # new accounts per IP per hour
+ASSESSMENTS_PER_DAY = 5                        # per account
+STORIES_PER_DAY = 5                            # AI stories per account
+LEADS_PER_DAY = 3                              # call-back requests per account
+DUMMY_HASH = bcrypt.hashpw(b"timing-equaliser", bcrypt.gensalt()).decode()
+
+
 def make_token(user_id: str) -> str:
-    exp = datetime.now(timezone.utc) + timedelta(days=30)
-    return jwt.encode({"sub": user_id, "exp": exp}, JWT_SECRET, algorithm="HS256")
+    now = datetime.now(timezone.utc)
+    return jwt.encode({"sub": user_id, "iat": now, "exp": now + timedelta(days=7)}, JWT_SECRET, algorithm="HS256")
 
 
 def public_user(u: User) -> dict:
@@ -183,7 +195,9 @@ async def config():
 
 
 @api.post("/auth/register")
-async def register(body: RegisterIn):
+async def register(body: RegisterIn, request: Request):
+    await limiter.take(db.rate_limits, namespace="register-ip", key=limiter.client_ip(request), limit=REGISTER_IP_LIMIT,
+                       window=3600, message="Too many accounts created from this connection. Please try again later.")
     email = body.email.lower()
     if await db.users.find_one({"email": email}):
         raise HTTPException(409, "An account with this email already exists")
@@ -195,9 +209,17 @@ async def register(body: RegisterIn):
 
 
 @api.post("/auth/login")
-async def login(body: LoginIn):
-    doc = await db.users.find_one({"email": body.email.lower()})
-    if not doc or not bcrypt.checkpw(body.password.encode(), doc["password_hash"].encode()):
+async def login(body: LoginIn, request: Request):
+    email = body.email.lower()
+    ip = limiter.client_ip(request)
+    msg = "Too many sign-in attempts. Please wait 15 minutes and try again."
+    await limiter.check(db.rate_limits, namespace="login-fail-ip", key=ip, limit=LOGIN_IP_LIMIT, window=LOGIN_WINDOW, message=msg)
+    await limiter.check(db.rate_limits, namespace="login-fail-email", key=email, limit=LOGIN_EMAIL_LIMIT, window=LOGIN_WINDOW, message=msg)
+    doc = await db.users.find_one({"email": email})
+    ok = bcrypt.checkpw(body.password.encode(), (doc["password_hash"] if doc else DUMMY_HASH).encode())
+    if not doc or not ok:
+        await limiter.record(db.rate_limits, namespace="login-fail-ip", key=ip, window=LOGIN_WINDOW)
+        await limiter.record(db.rate_limits, namespace="login-fail-email", key=email, window=LOGIN_WINDOW)
         raise HTTPException(401, "Incorrect email or password")
     user = User.from_mongo(doc)
     return {"token": make_token(user.id), "user": public_user(user)}
@@ -214,6 +236,8 @@ def assessment_out(a: Assessment) -> dict:
 
 @api.post("/assessments")
 async def create_assessment(body: AssessmentIn, user: User = Depends(current_user)):
+    await limiter.take(db.rate_limits, namespace="assess-user", key=user.id, limit=ASSESSMENTS_PER_DAY, window=DAY,
+                       message=f"You've reached today's limit of {ASSESSMENTS_PER_DAY} family checks. Please come back tomorrow.")
     inputs = body.model_dump()
     a = Assessment(user_id=user.id, inputs=inputs, results=compute(inputs), created_at=now_iso())
     res = await db.assessments.insert_one(a.to_mongo())
@@ -279,6 +303,8 @@ async def story(aid: str, user: User = Depends(current_user)):
     a = await get_owned(aid, user)
     if a.story:
         return a.story
+    await limiter.take(db.rate_limits, namespace="story-user", key=user.id, limit=STORIES_PER_DAY, window=DAY,
+                       message="You've reached today's limit for new stories. Please try again tomorrow.")
     i, r = a.inputs, a.results
     facts = {
         "name": i.get("first_name") or user.name,
@@ -376,6 +402,8 @@ def lead_email_html(lead: Lead, summary: Optional[dict]) -> str:
 
 @api.post("/leads")
 async def create_lead(body: LeadIn, user: User = Depends(current_user)):
+    await limiter.take(db.rate_limits, namespace="lead-user", key=user.id, limit=LEADS_PER_DAY, window=DAY,
+                       message="We've already got your request. Mark will be in touch soon.")
     summary = (await get_owned(body.assessment_id, user)).results if body.assessment_id else None
     lead = Lead(user_id=user.id, email=user.email, name=body.name.strip(), phone=body.phone.strip(),
                 preferred_time=body.preferred_time, message=body.message, assessment_id=body.assessment_id,
@@ -400,6 +428,7 @@ app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=["*"], 
 async def startup():
     await db.users.create_index("email", unique=True)
     await db.assessments.create_index("user_id")
+    await db.rate_limits.create_index("expires_at", expireAfterSeconds=0)
 
 
 @app.on_event("shutdown")
