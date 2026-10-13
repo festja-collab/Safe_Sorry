@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Linking, Pressable, ScrollView, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -14,7 +14,10 @@ import { Button, Field, Txt } from "@/src/components/ui";
 import { usesNativeTabs } from "@/src/navigation";
 import { makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
-const PORTRAIT = "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?crop=entropy&cs=srgb&fm=jpg&q=80&w=600";
+type Config = {
+  calendly_url: string;
+  adviser: { name: string; bio: string; photo_url: string; phone: string; firm_name: string; fca_number: string };
+};
 const TIMES = ["Mornings", "Afternoons", "Evenings", "Weekends", "Any time"];
 
 export default function Adviser() {
@@ -30,7 +33,9 @@ export default function Adviser() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const config = useQuery({ queryKey: ["config"], queryFn: () => api<{ calendly_url: string }>("/config") });
+  const config = useQuery({ queryKey: ["config"], queryFn: () => api<Config>("/config") });
+  const adviser = config.data?.adviser;
+  const first = adviser?.name.split(" ")[0] ?? "your adviser";
   const list = useQuery({ queryKey: ["assessments"], queryFn: () => api<AssessmentSummary[]>("/assessments") });
   const assessmentId = params.assessment ?? list.data?.[0]?.id;
 
@@ -59,10 +64,14 @@ export default function Adviser() {
       </View>
       <KeyboardAwareScrollView bottomOffset={24} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: bottomChrome + spacing.xl, gap: spacing.xl }}>
         <View style={s.intro}>
-          <Image source={{ uri: PORTRAIT }} style={s.portrait} contentFit="cover" transition={300} />
+          <Image source={adviser ? { uri: adviser.photo_url } : undefined} style={s.portrait} contentFit="cover" transition={300} testID="adviser-photo" />
           <View style={{ flex: 1, gap: spacing.xs }}>
-            <Txt variant="title">Hi, I’m Claire.</Txt>
-            <Txt variant="small">Protection specialist. Mum of two. I’ll never push you into anything.</Txt>
+            <Txt variant="title" testID="adviser-name">
+              {adviser ? `Hi, I’m ${first}.` : " "}
+            </Txt>
+            <Txt variant="small" testID="adviser-bio">
+              {adviser?.bio ?? ""}
+            </Txt>
           </View>
         </View>
         <Txt variant="display">Let’s close the gap together.</Txt>
@@ -78,19 +87,28 @@ export default function Adviser() {
           disabled={!config.data}
           onPress={() => config.data && WebBrowser.openBrowserAsync(config.data.calendly_url)}
         />
+        {adviser?.phone ? (
+          <Button
+            testID="adviser-call-now-button"
+            title={`Call ${first} on ${adviser.phone}`}
+            variant="secondary"
+            icon="phone"
+            onPress={() => Linking.openURL(`tel:${adviser.phone.replace(/[^0-9+]/g, "")}`)}
+          />
+        ) : null}
 
         {lead.isSuccess ? (
           <View style={s.success} testID="adviser-lead-success">
             <Feather name="check-circle" size={28} color={colors.success} />
             <Txt variant="title">Thank you, {name.split(" ")[0]}.</Txt>
             <Txt>
-              Your request is with Claire. Expect a call {time === "Any time" ? "soon" : `in the ${time.toLowerCase()}`} — usually
+              Your request is with {first}. Expect a call {time === "Any time" ? "soon" : `in the ${time.toLowerCase()}`} — usually
               within one working day. Taking this step is the hardest part, and you’ve done it.
             </Txt>
           </View>
         ) : (
           <View style={s.form}>
-            <Txt variant="title">Or ask Claire to call you</Txt>
+            <Txt variant="title">Or ask {first} to call you</Txt>
             <Field testID="adviser-name-input" label="Your name" value={name} onChangeText={setName} placeholder="Your name" />
             <Field testID="adviser-phone-input" label="Phone number" value={phone} onChangeText={setPhone} placeholder="07700 900123" keyboardType="phone-pad" />
             <View style={{ gap: spacing.sm }}>
@@ -117,7 +135,7 @@ export default function Adviser() {
             {assessmentId ? (
               <View style={s.attach}>
                 <Feather name="paperclip" size={14} color={colors.muted} />
-                <Txt variant="small">Your latest family story will be shared with Claire.</Txt>
+                <Txt variant="small">Your latest family story will be shared with {first}.</Txt>
               </View>
             ) : null}
             {error ? (
@@ -128,6 +146,11 @@ export default function Adviser() {
             <Button testID="adviser-submit-button" title="Request a call back" variant="secondary" icon="phone" loading={lead.isPending} onPress={submit} />
           </View>
         )}
+        {adviser ? (
+          <Txt variant="small" style={{ textAlign: "center" }} testID="adviser-firm-info">
+            {adviser.firm_name} is authorised and regulated by the Financial Conduct Authority. FCA No. {adviser.fca_number}.
+          </Txt>
+        ) : null}
       </KeyboardAwareScrollView>
     </View>
   );

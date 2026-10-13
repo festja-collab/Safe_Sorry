@@ -166,7 +166,18 @@ async def root():
 
 @api.get("/config")
 async def config():
-    return {"calendly_url": CALENDLY_URL, "app_name": APP_NAME}
+    return {
+        "calendly_url": CALENDLY_URL,
+        "app_name": APP_NAME,
+        "adviser": {
+            "name": os.environ["ADVISER_NAME"],
+            "bio": os.environ["ADVISER_BIO"],
+            "photo_url": os.environ["ADVISER_PHOTO_URL"],
+            "phone": os.environ["ADVISER_PHONE"],
+            "firm_name": os.environ["FIRM_NAME"],
+            "fca_number": os.environ["FCA_NUMBER"],
+        },
+    }
 
 
 @api.post("/auth/register")
@@ -356,7 +367,7 @@ def lead_email_html(lead: Lead, summary: Optional[dict]) -> str:
         '<h2 style="color:#2C2A28;margin:0 0 12px">New adviser request</h2>'
         f'<p style="color:#3A3835">A {escape(APP_NAME)} user would like to talk about protecting their family.</p>'
         f'<table role="presentation" style="border-collapse:collapse">{trs}</table>'
-        f'<p style="font-size:12px;color:#888;margin-top:24px">Sent by {escape(APP_NAME)}.</p>'
+        f'<p style="font-size:12px;color:#888;margin-top:24px">Sent by {escape(APP_NAME)} for {escape(os.environ["FIRM_NAME"])}.</p>'
         '</td></tr></table>'
     )
 

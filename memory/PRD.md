@@ -26,3 +26,8 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - P1: Password reset, admin lead view, real adviser email/Calendly
 - P1: Share story card image / PDF export of report
 - P2: Quote estimates per gap (monthly premium ranges), reminders to review after life events, dark mode
+
+## Update (Oct 2026) — Adviser details configurable
+- Adviser name, bio, photo URL, phone, firm name, FCA number, adviser email and Calendly link all come from backend/.env (ADVISER_NAME, ADVISER_BIO, ADVISER_PHOTO_URL, ADVISER_PHONE, FIRM_NAME, FCA_NUMBER, ADVISER_EMAIL, CALENDLY_URL) via GET /api/config
+- Adviser tab: tap-to-call button, FCA disclosure footer
+- Real values still pending from user (placeholders in place)
