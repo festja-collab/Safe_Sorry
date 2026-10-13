@@ -92,3 +92,4 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 ## Update (Oct 2026) — Naming & logo concepts
 - "Safe > Sorry" = "better safe than sorry". Email sender name now EMAIL_FROM_NAME="Better Safe Than Sorry" (">" not allowed in sender)
 - GET /api/logo-concepts (backend/logo_concepts.py): 5 SVG concepts (A wordmark, B shield, C family roof, D S>S seal, E app icon), navy/gold. Not applied to app yet; user's own draft not received (no asset uploaded)
+- Polished logos from user's draft via Gemini Nano Banana (gemini-3-pro-image-preview, script backend/scripts_gen_logo.py): backend/static/logos/logo_v1..v3.png served at /api/static/logos/*, shown at top of /api/logo-concepts. Not applied to app yet

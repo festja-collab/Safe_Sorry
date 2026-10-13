@@ -99,6 +99,13 @@ def draft_versions() -> list[tuple[str, str, str]]:
 
 def concept_sheet() -> str:
     mine = "".join(f'<div class="card"><div class="art">{svg}</div><h2>{t}</h2><p>{d}</p></div>' for t, d, svg in draft_versions())
+    polished = "".join(
+        f'<div class="card"><div class="art"><img src="/api/static/logos/logo_{k}.png" alt="Logo {n}" style="width:100%;border-radius:12px"></div>'
+        f'<h2>{n}</h2><p>{d}</p></div>' for k, n, d in [
+            ("v1", "Polished 1: closest to your draft", "Your layout refined, with a navy ring, family and wave, a gold sun and a gold chevron."),
+            ("v2", "Polished 2: gold ring", "A gold ring and gold ribbon wave around a navy family. The warmest and most premium of the three."),
+            ("v3", "Polished 3: soft modern", "Softer shading on the family and a gold, ribbon-style chevron. Calm and modern."),
+        ])
     cards = "".join(
         f'<div class="card"><div class="art">{svg}</div><h2>{k}. {t}</h2><p>{desc}</p></div>' for k, t, desc, svg in concepts())
     return f"""<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -110,7 +117,9 @@ h1{{font-family:{SERIF};color:{NAVY};margin:0 0 6px}} .sub{{color:#6C7683;margin
 .card:last-child .art svg{{width:140px}} .mine .card:last-child .art svg{{width:200px}} h2{{font-family:{SERIF};font-size:20px;margin:16px 0 6px;color:{NAVY}}} p{{margin:0;line-height:1.5;color:#38434F}}
 </style></head><body><div class="wrap"><h1>Safe <span style="color:{GOLD}">&gt;</span> Sorry: logo concepts</h1>
 <p class="sub">Read as “better safe than sorry”. Navy and gold, matching the app. These are concepts only; nothing has been changed in the app.</p>
-<h1 style="font-size:24px">Your draft, reimagined</h1><p class="sub">Same idea (family under a roof, sun, wave and the “&gt;”) redrawn cleanly in navy and gold.</p>
+<h1 style="font-size:24px">Polished versions of your draft</h1><p class="sub">Created from your design with an AI image tool, recoloured in navy and gold.</p>
+<div class="grid">{polished}</div>
+<h1 style="font-size:24px;margin-top:40px">Your draft, reimagined</h1><p class="sub">Same idea (family under a roof, sun, wave and the “&gt;”) redrawn cleanly in navy and gold.</p>
 <div class="grid mine">{mine}</div>
 <h1 style="font-size:24px;margin-top:40px">Earlier concepts</h1><p class="sub">For comparison.</p>
 <div class="grid">{cards}</div></div></body></html>"""
