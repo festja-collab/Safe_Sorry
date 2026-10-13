@@ -85,3 +85,6 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Screens: /firm-signup (link on onboarding), branding section in Adviser settings, trial banner + logo + Marketing tips button on adviser Home, /marketing-tips (static content src/marketing-tips.ts), client Adviser tab shows firm logo/brand line; non-AR firms get correct FCA footer; Book-a-call hidden when no booking link
 - Billing: not built (user will supply pricing). Trial expiry shows banner only, nothing is blocked
 - Email: mark.turner@sflwealth.co.uk is a real mailbox (SMTP RCPT 250); platform email returns false 422 undeliverable_recipient → user to contact support@emergent.sh
+
+## Update (Oct 2026) — Management presentation
+- GET /api/presentation (backend/presentation.py): 11-slide browser deck for SFL management (SFL only, no resale). Arrow keys / swipe / buttons, full-screen, Print → Save as PDF = 1 slide per A4 landscape page

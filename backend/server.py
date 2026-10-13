@@ -28,6 +28,7 @@ from articles import ARTICLES  # noqa: E402
 from emailer import send_email  # noqa: E402
 from compliance_pack import build_pack  # noqa: E402
 from invite import invite_page  # noqa: E402
+from presentation import build_presentation  # noqa: E402
 from privacy import PRIVACY_VERSION, privacy_sections  # noqa: E402
 import hashlib  # noqa: E402
 from fastapi.responses import HTMLResponse, Response  # noqa: E402
@@ -639,6 +640,11 @@ async def compliance_pack():
     adviser = await adviser_profile(await default_adviser())
     return await build_pack(app_name=APP_NAME, adviser=adviser, story_prompt=STORY_SYSTEM,
                             limits={"assess": ASSESSMENTS_PER_DAY, "story": STORIES_PER_DAY, "leads": LEADS_PER_DAY})
+
+
+@api.get("/presentation", response_class=HTMLResponse)
+async def presentation():
+    return build_presentation(app_name=APP_NAME, adviser=await adviser_profile(await default_adviser()))
 
 
 @api.get("/invite/{code}", response_class=HTMLResponse)
