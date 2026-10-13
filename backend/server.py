@@ -447,7 +447,7 @@ async def forgot_password(body: ForgotIn, request: Request):
     await db.password_resets.insert_one({"user_id": uid, "code_hash": _code_hash(uid, code), "attempts": 0,
                                          "created_at": now, "expires_at": now + timedelta(minutes=RESET_TTL_MIN)})
     html = (
-        '<table role="presentation" width="100%" style="background:#FFFFFF"><tr><td style="padding:24px;font-family:Arial,sans-serif;color:#1E2B38">'
+        f'<table role="presentation" width="100%" style="background:#FFFFFF">{email_header(request)}<tr><td style="padding:24px;font-family:Arial,sans-serif;color:#1E2B38">'
         f'<p>Hi {escape(doc.get("name", ""))},</p>'
         f'<p>Here is your {escape(APP_NAME)} password reset code:</p>'
         f'<p style="font-size:32px;letter-spacing:6px;font-weight:bold;color:#223342">{code}</p>'
@@ -693,7 +693,19 @@ async def article(slug: str):
     raise HTTPException(404, "Article not found")
 
 
-def lead_email_html(lead: Lead, summary: Optional[dict], firm_name: str) -> str:
+def public_base(request: Request) -> str:
+    host = (request.headers.get("x-forwarded-host") or request.headers.get("host", "")).split(",")[0].strip()
+    return f"https://{host}"
+
+
+def email_header(request: Request) -> str:
+    """Navy band with the gold logo, used at the top of every email (absolute https URL as email clients require)."""
+    return ('<tr><td align="center" bgcolor="#223342" style="background:#223342;padding:24px 16px">'
+            f'<img src="{public_base(request)}/api/static/logos/logo_dark_transparent.png" width="120" alt="{escape(APP_NAME)}" '
+            'style="display:block;width:120px;height:auto;border:0"></td></tr>')
+
+
+def lead_email_html(lead: Lead, summary: Optional[dict], firm_name: str, header: str = "") -> str:
     rows = [("Name", lead.name), ("Email", lead.email), ("Phone", lead.phone),
             ("Best time", lead.preferred_time or "Any"), ("Message", lead.message or "-")]
     if summary:
@@ -710,8 +722,8 @@ def lead_email_html(lead: Lead, summary: Optional[dict], firm_name: str) -> str:
         for k, v in rows
     )
     return (
-        '<table role="presentation" width="100%" style="background:#FDFBF7"><tr><td style="padding:24px;font-family:Arial,sans-serif">'
-        '<h2 style="color:#2C2A28;margin:0 0 12px">New adviser request</h2>'
+        f'<table role="presentation" width="100%" style="background:#FDFBF7">{header}<tr><td style="padding:24px;font-family:Arial,sans-serif">'
+        '<h2 style="color:#223342;margin:0 0 12px">New adviser request</h2>'
         f'<p style="color:#3A3835">A {escape(APP_NAME)} user would like to talk about protecting their family.</p>'
         f'<table role="presentation" style="border-collapse:collapse">{trs}</table>'
         f'<p style="font-size:12px;color:#888;margin-top:24px">Sent by {escape(APP_NAME)} for {escape(firm_name)}.</p>'
@@ -720,7 +732,7 @@ def lead_email_html(lead: Lead, summary: Optional[dict], firm_name: str) -> str:
 
 
 @api.post("/leads")
-async def create_lead(body: LeadIn, user: User = Depends(current_user)):
+async def create_lead(body: LeadIn, request: Request, user: User = Depends(current_user)):
     await limiter.take(db.rate_limits, namespace="lead-user", key=user.id, limit=LEADS_PER_DAY, window=DAY,
                        message="We've already got your request. Your adviser will be in touch soon.")
     summary = (await get_owned(body.assessment_id, user)).results if body.assessment_id else None
@@ -739,7 +751,7 @@ async def create_lead(body: LeadIn, user: User = Depends(current_user)):
     lead.id = str(res.inserted_id)
     try:
         await send_email(to=adviser.lead_email or adviser.email, subject=f"New {APP_NAME} adviser request: {lead.name}",
-                         html=lead_email_html(lead, summary, firm.name if firm else APP_NAME), reply_to=user.email)
+                         html=lead_email_html(lead, summary, firm.name if firm else APP_NAME, email_header(request)), reply_to=user.email)
         await db.leads.update_one({"_id": ObjectId(lead.id)}, {"$set": {"email_sent": True}})
         lead.email_sent = True
     except Exception as e:
