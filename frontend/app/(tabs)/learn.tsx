@@ -47,7 +47,7 @@ export default function Learn() {
             <Animated.View entering={FadeInDown.delay(index * 80).duration(400)}>
               <Pressable testID={`learn-article-${item.slug}`} onPress={() => router.push(`/article/${item.slug}`)} style={s.item}>
                 <View style={s.metaRow}>
-                  <Txt variant="small" color={colors.brandPrimary}>
+                  <Txt variant="small" color={colors.accentText}>
                     {item.category}
                   </Txt>
                   <Txt variant="small">· {item.read_minutes} min read</Txt>

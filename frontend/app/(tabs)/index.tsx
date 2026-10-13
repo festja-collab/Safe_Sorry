@@ -113,7 +113,7 @@ export default function Home() {
           <Txt variant="label">Worth a read</Txt>
           {(articles.data ?? []).slice(0, 2).map((a) => (
             <Pressable key={a.slug} testID={`home-article-${a.slug}`} onPress={() => router.push(`/article/${a.slug}`)} style={s.article}>
-              <Txt variant="small" color={colors.brandPrimary}>
+              <Txt variant="small" color={colors.accentText}>
                 {a.category}
               </Txt>
               <Txt variant="title">{a.title}</Txt>
@@ -130,7 +130,7 @@ const useStyles = makeStyles((c) => ({
   header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md, backgroundColor: c.surface, gap: spacing.xs },
   storyCard: { backgroundColor: c.surfaceInverse, borderRadius: radius.lg, padding: spacing.xl, gap: spacing.lg },
   statRow: { flexDirection: "row", gap: spacing.lg },
-  pctTrack: { height: 8, borderRadius: radius.pill, backgroundColor: "rgba(253,251,247,0.15)", overflow: "hidden" },
+  pctTrack: { height: 8, borderRadius: radius.pill, backgroundColor: c.inverseTrack, overflow: "hidden" },
   pctFill: { height: 8, borderRadius: radius.pill, backgroundColor: c.brandPrimary },
   readRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   startCard: { backgroundColor: c.surfaceSecondary, borderRadius: radius.lg, overflow: "hidden" },

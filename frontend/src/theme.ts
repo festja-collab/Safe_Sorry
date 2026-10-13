@@ -7,45 +7,48 @@ import { Appearance, StyleSheet, useColorScheme } from "react-native";
 export type ColorScheme = "light" | "dark";
 
 const light = {
-  surface: "#FDFBF7",
-  onSurface: "#2C2A28",
-  surfaceSecondary: "#F4F0EA",
-  onSurfaceSecondary: "#3A3835",
-  surfaceTertiary: "#EAE4D9",
-  onSurfaceTertiary: "#4B4844",
-  surfaceInverse: "#343D35",
-  onSurfaceInverse: "#FDFBF7",
-  muted: "#7D7973",
+  // SFL-inspired palette: white, navy (#223342) and gold (#BF9B30)
+  surface: "#FFFFFF",
+  onSurface: "#1E2B38",
+  surfaceSecondary: "#F5F6F8",
+  onSurfaceSecondary: "#38434F",
+  surfaceTertiary: "#E9ECF0",
+  onSurfaceTertiary: "#4A5562",
+  surfaceInverse: "#223342",
+  onSurfaceInverse: "#FFFFFF",
+  muted: "#6C7683",
 
-  brand: "#A2A995",
-  onBrand: "#22251F",
-  brandPrimary: "#D18E70",
-  onBrandPrimary: "#FFFFFF",
-  brandSecondary: "#96A192",
+  brand: "#223342",
+  onBrand: "#FFFFFF",
+  brandPrimary: "#BF9B30",
+  onBrandPrimary: "#1A2633",
+  brandSecondary: "#223342",
   onBrandSecondary: "#FFFFFF",
-  brandTertiary: "#E2D9C8",
-  onBrandTertiary: "#3A3835",
+  brandTertiary: "#F4EEDC",
+  onBrandTertiary: "#6E5714",
 
-  success: "#7A9374",
+  success: "#3E8E63",
   onSuccess: "#FFFFFF",
-  warning: "#D9A05B",
+  warning: "#B98318",
   onWarning: "#FFFFFF",
-  error: "#C06C62",
+  error: "#BF4A41",
   onError: "#FFFFFF",
-  info: "#8B9BA6",
+  info: "#1890D7",
   onInfo: "#FFFFFF",
 
-  border: "#E1DBCF",
-  borderStrong: "#C2B9A9",
-  divider: "#EFEBE3",
+  border: "#E3E2E7",
+  borderStrong: "#C3C9D2",
+  divider: "#EEEFF2",
 
   // Soft tints used behind status icons
-  successTint: "#E7EDE4",
-  warningTint: "#F6EAD9",
-  errorTint: "#F3E1DD",
-  infoTint: "#E4E8EB",
-  highlight: "#F7EBC9", // highlighter-pen yellow for the story card
-  scrim: "rgba(52,61,53,0)",
+  successTint: "#E6F2EC",
+  warningTint: "#F8EFDA",
+  errorTint: "#F8E5E3",
+  infoTint: "#E3F0FA",
+  highlight: "#F6EED6", // soft gold highlight for the story card
+  scrim: "rgba(34,51,66,0)",
+  inverseTrack: "rgba(255,255,255,0.15)",
+  accentText: "#8F7019", // readable gold for small text on white
 };
 
 export type ThemeColors = typeof light;

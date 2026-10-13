@@ -29,7 +29,7 @@ export default function ArticleScreen() {
         <ErrorState testID="article-error" message="We couldn't open this guide." onRetry={() => q.refetch()} />
       ) : (
         <ScrollView contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + spacing.xl, gap: spacing.lg }}>
-          <Txt variant="small" color={colors.brandPrimary}>
+          <Txt variant="small" color={colors.accentText}>
             {q.data.category} · {q.data.read_minutes} min read
           </Txt>
           <Txt variant="hero" testID="article-title">

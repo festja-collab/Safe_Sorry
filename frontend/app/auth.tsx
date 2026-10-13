@@ -92,7 +92,7 @@ export default function AuthScreen() {
           <Pressable testID="auth-toggle-mode" onPress={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }} style={{ paddingVertical: spacing.sm }}>
             <Txt variant="small">
               {mode === "login" ? "New here? " : "Already have an account? "}
-              <Txt variant="small" color={colors.brandPrimary}>
+              <Txt variant="small" color={colors.accentText}>
                 {mode === "login" ? "Create an account" : "Sign in"}
               </Txt>
             </Txt>

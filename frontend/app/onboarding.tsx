@@ -23,6 +23,7 @@ export default function Onboarding() {
         locations={[0, 0.4, 0.78]}
         style={StyleSheet.absoluteFill}
       />
+      <LinearGradient colors={[colors.surfaceInverse, colors.scrim]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 96, opacity: 0.6 }} />
       <View style={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.xl }}>
         <Txt variant="title" color={colors.onSurfaceInverse} testID="onboarding-logo">
           Safe {">"} Sorry

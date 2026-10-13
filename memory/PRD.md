@@ -34,6 +34,7 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 
 ## Update (Oct 2026) — Real adviser details
 - Adviser: Mark Turner, Senior Protection Specialist, SFL Wealth Management Ltd (FRN 912517), AR of Rosemount Financial Solutions (IFA) Limited (FRN 535515)
-- Leads → mark.turner@sflwealth.co.uk; Calendly https://calendly.com/mark-turner-sflw; phone 01792 735 453; photo from sflwealth.co.uk team page
+- Leads → mark.turner@sflwealth.co.uk; Calendly https://calendly.com/mark-turner-sflw; phone 07882 719456; photo from sflwealth.co.uk team page
 - AR disclosure footer on Adviser tab
 - Pending: firm compliance sign-off before publishing
+- Theme switched to SFL-inspired white/navy (#223342)/gold (#BF9B30)
