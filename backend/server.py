@@ -24,6 +24,8 @@ load_dotenv(ROOT_DIR / '.env')
 from calc import compute  # noqa: E402
 from articles import ARTICLES  # noqa: E402
 from emailer import send_email  # noqa: E402
+from compliance_pack import build_pack  # noqa: E402
+from fastapi.responses import HTMLResponse  # noqa: E402
 import limiter  # noqa: E402
 from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone  # noqa: E402
 
@@ -364,6 +366,14 @@ async def story(aid: str, user: User = Depends(current_user)):
 @api.get("/articles")
 async def articles():
     return [{k: v for k, v in a.items() if k != "body"} for a in ARTICLES]
+
+
+@api.get("/compliance-pack", response_class=HTMLResponse)
+async def compliance_pack():
+    adviser = (await config())["adviser"]
+    adviser["email"] = ADVISER_EMAIL
+    return await build_pack(app_name=APP_NAME, adviser=adviser, story_prompt=STORY_SYSTEM,
+                            limits={"assess": ASSESSMENTS_PER_DAY, "story": STORIES_PER_DAY, "leads": LEADS_PER_DAY})
 
 
 @api.get("/articles/{slug}")

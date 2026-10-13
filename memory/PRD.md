@@ -43,3 +43,6 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Mongo-backed rate limiter (backend/limiter.py, TTL collection rate_limits)
 - Limits: failed logins 5/email & 10/IP per 15 min; registrations 5/IP/hour; assessments 5/user/day; AI stories 5/user/day; leads 3/user/day
 - Password min 10 chars for new accounts; JWT lifetime 7 days; constant-time login (dummy hash)
+
+## Update (Oct 2026) — Compliance review pack
+- GET /api/compliance-pack: printable HTML pack (backend/compliance_pack.py) generated from live settings: summary, review access, journey, all customer wording, calc assumptions + worked example, AI prompt + fixed sample letter, data/processors/security, Consumer Duty, open items, sign-off table
