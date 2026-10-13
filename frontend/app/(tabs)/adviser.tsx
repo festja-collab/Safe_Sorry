@@ -89,6 +89,15 @@ export default function Adviser() {
             </Txt>
           </View>
         </View>
+        {adviser?.award ? (
+          <View style={s.award} testID="adviser-award">
+            <Feather name="award" size={22} color={colors.brandPrimary} />
+            <View style={{ flex: 1 }}>
+              <Txt variant="label">Award winner</Txt>
+              <Txt style={{ fontWeight: "700" }}>{adviser.award}</Txt>
+            </View>
+          </View>
+        ) : null}
         <Txt variant="display">Let’s close the gap together.</Txt>
         <Txt>
           Fifteen minutes on the phone is often all it takes. I’ll look at your story, find the cover that fits your
@@ -193,6 +202,7 @@ const useStyles = makeStyles((c) => ({
   chip: { height: 36, flexShrink: 0, paddingHorizontal: spacing.lg, borderRadius: radius.pill, backgroundColor: c.surfaceTertiary, justifyContent: "center" },
   chipOn: { backgroundColor: c.surfaceInverse },
   attach: { flexDirection: "row", gap: spacing.sm, alignItems: "center" },
+  award: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: c.brandTertiary, borderRadius: radius.md, padding: spacing.lg, borderLeftWidth: 4, borderLeftColor: c.brandPrimary },
   firm: { borderTopWidth: 3, paddingTop: spacing.lg, gap: spacing.md, alignItems: "center" },
   logo: { width: 160, height: 56 },
   success: { backgroundColor: c.successTint, borderRadius: radius.lg, padding: spacing.xl, gap: spacing.md },

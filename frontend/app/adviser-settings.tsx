@@ -12,7 +12,7 @@ import { BRAND_COLORS, ColorPicker, LogoBox, pickLogo } from "@/src/components/f
 import { Button, Field, Loading, Txt } from "@/src/components/ui";
 import { makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
-type P = { name: string; title: string; bio: string; photo_url: string; phone: string; calendly_url: string; lead_email: string };
+type P = { name: string; title: string; bio: string; award: string; photo_url: string; phone: string; calendly_url: string; lead_email: string };
 type F = { name: string; fca_number: string; principal_name: string; principal_fca_number: string; brand_color: string };
 
 export default function AdviserSettings() {
@@ -29,7 +29,7 @@ export default function AdviserSettings() {
   useEffect(() => {
     if (q.data && !p) {
       const d = q.data;
-      setP({ name: d.name, title: d.title, bio: d.bio, photo_url: d.photo_url, phone: d.phone, calendly_url: d.calendly_url, lead_email: d.email });
+      setP({ name: d.name, title: d.title, bio: d.bio, award: d.award ?? "", photo_url: d.photo_url, phone: d.phone, calendly_url: d.calendly_url, lead_email: d.email });
       setF({ name: d.firm_name, fca_number: d.fca_number, principal_name: d.principal_name, principal_fca_number: d.principal_fca_number, brand_color: d.brand_color || BRAND_COLORS[0].hex });
     }
   }, [q.data, p]);
@@ -81,6 +81,7 @@ export default function AdviserSettings() {
             {field("name", "Name", { autoCapitalize: "words" })}
             {field("title", "Job title", { autoCapitalize: "sentences" })}
             {field("bio", "Short bio", { autoCapitalize: "sentences", multiline: true })}
+            {field("award", "Award (optional)", { autoCapitalize: "sentences", placeholder: "e.g. Protection Adviser of the Year 2026" })}
             {field("photo_url", "Photo link (https://…)")}
             {field("phone", "Phone number", { keyboardType: "phone-pad" })}
             {field("calendly_url", "Booking link (https://…)")}

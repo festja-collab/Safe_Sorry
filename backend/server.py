@@ -85,6 +85,7 @@ class User(BaseDocument):
     # Adviser profile (advisers only)
     title: str = ""
     bio: str = ""
+    award: str = ""
     photo_url: str = ""
     phone: str = ""
     calendly_url: str = ""
@@ -334,7 +335,7 @@ async def adviser_profile(a: User) -> dict:
         "firm_id": f.id if f else None, "brand_color": f.brand_color if f else "",
         "logo_url": f"/api/firm-logo/{f.id}?v={f.logo_version}" if f and f.logo_path else "",
         "plan": f.plan if f else "", "trial_ends_at": f.trial_ends_at if f else "", "trial_days_left": trial_days_left(f),
-        "id": a.id, "name": a.name, "title": a.title, "bio": a.bio, "photo_url": a.photo_url, "phone": a.phone,
+        "id": a.id, "name": a.name, "title": a.title, "bio": a.bio, "award": a.award, "photo_url": a.photo_url, "phone": a.phone,
         "calendly_url": a.calendly_url, "email": a.lead_email or a.email, "adviser_code": a.adviser_code,
         "firm_name": f.name if f else "", "fca_number": f.fca_number if f else "",
         "principal_name": f.principal_name if f else "", "principal_fca_number": f.principal_fca_number if f else "",
@@ -916,6 +917,7 @@ class AdviserProfileIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     title: str = Field(default="", max_length=80)
     bio: str = Field(default="", max_length=300)
+    award: str = Field(default="", max_length=120)
     photo_url: str = Field(default="", max_length=500, pattern=r"^(https://\S+)?$")
     phone: str = Field(default="", max_length=30)
     calendly_url: str = Field(default="", max_length=300, pattern=r"^(https://\S+)?$")

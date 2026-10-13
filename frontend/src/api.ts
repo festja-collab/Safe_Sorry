@@ -70,6 +70,7 @@ export type AdviserProfile = {
   name: string;
   title: string;
   bio: string;
+  award?: string;
   photo_url: string;
   phone: string;
   calendly_url: string;

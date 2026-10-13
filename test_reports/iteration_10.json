@@ -1,0 +1,31 @@
+{
+  "summary": "Iteration 10: Tested the new adviser 'award' field end-to-end. Backend: 8/8 pytest tests pass covering /my-adviser & /adviser/profile exposing the field with correct value for Mark, PUT persistence, empty-award clearing, 120-char boundary accepted, 121+ chars returns 422, and light regression on firm info + assessments. Frontend (390x844): client Tom sees the gold-accent 'adviser-award' card with 'AWARD WINNER' label and text 'Protection Adviser of the Year 2026 \u00b7 Next Intelligence Awards' positioned between Mark's photo/bio and the 'Let's close the gap' section (layout clean, left gold border, award icon). Adviser Mark sees the pre-filled 'Award (optional)' field on /adviser-settings; edit + save works (settings-saved toast appears). Mark's award was RESTORED to the exact original value and verified via /api/my-adviser.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_adviser_award.py",
+    "/app/test_reports/pytest/iteration10.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is 1089 lines; consider splitting into routers (auth, adviser, firm, leads, assessments) in a future iteration. Not blocking.",
+    "adviser_profile() always returns 'award' key (default empty string from User model) so clients with blank award cleanly hide the card via truthiness check in adviser.tsx (verified)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_adviser_award.py (new)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "None. Modified Mark's award during testing then restored it to 'Protection Adviser of the Year 2026 \u00b7 Next Intelligence Awards'.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Mark's award is set to 'Protection Adviser of the Year 2026 \u00b7 Next Intelligence Awards'. The adviser-award testID is only rendered when award is truthy; the AdviserProfileIn pydantic model enforces max_length=120 so PUT with 121 chars returns 422. Tests use '-o addopts=' to disable xdist parallel execution because the pytest.ini forces -n/--dist and our fixtures were originally module-scoped (now function-scoped so parallel should also work, but running serially is safer when mutating Mark's profile).",
+  "rca_of_issue": ""
+}
