@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 12 - adviser Leads CRM CSV export (backend + web). Backend: 7/7 pytest tests pass covering auth (401 no-token, 403 Tom client, 200 Mark adviser), header row exact match (14 cols: Lead ID..Firm), no assessment/financial fields, ?status=new filter, formula-injection ='cmd..' name is prefixed with a leading apostrophe, UTF-8 BOM present on API bytes, Content-Type text/csv, Content-Disposition attachment with .csv filename, consent (Yes + wording), adviser & firm populated. Frontend: as Mark on 1440x900, Leads tab centred (max 1240), header has 'Download for CRM' button + hint at top-right (btn x=1103, y=12), 3 columns of lead cards (unique Xs = [124, 525, 927]). Clicking triggers a browser download (safe-sorry-leads-2026-10-14.csv, 547 B, 3 data rows, correct header). Filters all/new/contacted/closed all work in the wide layout. At 1000x800: 2 columns (Xs=[24,506]), button not clipped. At 390x844: 1 column, button stacks under title (title y=32 vs btn y=78), no clipping. Lead detail @1440: Needs/Has/Gap table renders (lead-cover-table), width 664 ≤ 760, perfectly centred (center x=720 vs viewport centre 720). No console errors. No deprecated expo packages detected. One minor regression noted: downloadLeadsCsv strips the API BOM because it uses res.text() before rebuilding the Blob — API bytes contain BOM, but the downloaded file does not. Harmless for most tools, but Excel on Windows may mojibake £ / non-ASCII names.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Download for CRM (web)",
+        "issue": "src/export-leads.ts uses `await res.text()` then wraps the string in a Blob. res.text() decodes UTF-8 and strips the leading U+FEFF BOM, so the file saved by the browser has NO BOM even though the backend sends one. Excel on Windows may mojibake £ / non-ASCII characters. Fix: use `const blob = await res.blob();` and feed `blob` straight to URL.createObjectURL (preserves BOM and bytes verbatim). Native path (expo-file-system) has the same issue because it also uses text.",
+        "affected_testIDs": ["leads-export-button"]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_leads_export.py",
+    "/app/test_reports/pytest/iteration12.xml",
+    "/app/test_reports/screens/it12_leads_1440.png",
+    "/app/test_reports/screens/it12_leads_1000.png",
+    "/app/test_reports/screens/it12_leads_390.png",
+    "/app/test_reports/screens/it12_lead_detail_1440.png"
+  ],
+  "action_items": [
+    "Minor: in /app/frontend/src/export-leads.ts replace `await res.text()` + `new Blob([text], ...)` with `await res.blob()` (web) and `res.arrayBuffer()` → Base64 for native file.write — preserves the UTF-8 BOM the backend added for Excel compatibility."
+  ],
+  "critical_code_review_comments": [
+    "server.py csv_cell only prefixes a leading apostrophe but still writes the dangerous char first — csv.writer will then quote-escape it. The resulting CSV cell is `'=cmd...` which Excel treats as text (good). This matches OWASP guidance.",
+    "export_leads uses a 5000-row to_list cap. Fine for Greenlight bursts but worth revisiting if any adviser exceeds that; consider streaming via StreamingResponse to avoid loading all rows into memory."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100%"},
+  "seed_data_creation": "Two temporary leads created via POST /api/leads as Tom then removed by the module-scoped cleanup fixture (by _CREATED_LEAD_IDS and a safety regex ^(=|TEST_)). db.rate_limits cleared before and after each test. No passwords changed.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Mark's seed password IupwtaavjJ2CfMKIFjRhfott is intact. Backend test file at /app/backend/tests/test_leads_export.py loads both backend/.env and frontend/.env so EXPO_PUBLIC_BACKEND_URL resolves. Three Tom leads currently seeded against Mark (all status=new) — if any later iteration changes seed counts, the status-filter test still works because it only checks col-7 equality and compares with the paired /api/adviser/leads?status=new count.",
+  "rca_of_issue": "N/A — no bugs. The BOM-stripping observation is a pre-existing minor UX issue, not a regression caused by this iteration's work."
+}

@@ -65,7 +65,7 @@ export default function LeadDetail() {
   return (
     <View style={s.root} testID="lead-detail-screen">
       {header}
-      <ScrollView contentContainerStyle={{ padding: spacing.xl, paddingTop: spacing.sm, paddingBottom: insets.bottom + spacing.xl, gap: spacing.xl }}>
+      <ScrollView contentContainerStyle={{ padding: spacing.xl, paddingTop: spacing.sm, paddingBottom: insets.bottom + spacing.xl, gap: spacing.xl, width: "100%", maxWidth: 760, alignSelf: "center" }}>
         <View style={{ gap: spacing.sm }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
             <Txt variant="display" style={{ flex: 1 }} testID="lead-name">
@@ -118,18 +118,51 @@ export default function LeadDetail() {
                 • {f}
               </Txt>
             ))}
-            <View style={s.gapRow}>
-              {[
-                ["Life cover gap", gbp(r.gaps.life.gap)],
-                ["Income protection", `${gbp(r.gaps.income.gap)}/mo`],
-                ["Critical illness", gbp(r.gaps.critical.gap)],
-              ].map(([k, v]) => (
-                <View key={k} style={{ flex: 1, gap: 2 }}>
-                  <Txt variant="small">{k}</Txt>
-                  <Txt style={{ color: colors.onSurface }}>{v}</Txt>
+            <View style={s.table} testID="lead-cover-table">
+              <View style={s.tr}>
+                {["", "Needs", "Has", "Gap"].map((h) => (
+                  <Txt key={h} variant="small" style={[s.td, h ? s.num : s.first]}>
+                    {h}
+                  </Txt>
+                ))}
+              </View>
+              {(
+                [
+                  ["Life cover", r.gaps.life, ""],
+                  ["Income protection", r.gaps.income, "/mo"],
+                  ["Critical illness", r.gaps.critical, ""],
+                ] as const
+              ).map(([k, g, unit]) => (
+                <View key={k} style={[s.tr, s.trLine]} testID={`lead-cover-${k.split(" ")[0].toLowerCase()}`}>
+                  <Txt variant="small" style={[s.td, s.first, { color: colors.onSurface }]}>
+                    {k}
+                  </Txt>
+                  <Txt variant="small" style={[s.td, s.num]}>{gbp(g.need) + unit}</Txt>
+                  <Txt variant="small" style={[s.td, s.num]}>{gbp(g.have) + unit}</Txt>
+                  <Txt variant="small" style={[s.td, s.num, { color: g.gap > 0 ? colors.error : colors.success, fontWeight: "700" }]}>
+                    {gbp(g.gap) + unit}
+                  </Txt>
                 </View>
               ))}
             </View>
+            {i ? (
+              <View style={{ gap: spacing.xs }} testID="lead-existing-cover">
+                <Txt variant="label">What they have now</Txt>
+                {[
+                  `Life insurance: ${Number(i.life_cover) ? gbp(i.life_cover) : "none"}`,
+                  `Death in service: ${Number(i.death_in_service) ? `${i.death_in_service}× salary (${gbp(i.death_in_service * i.annual_income)})` : "none"}`,
+                  `Income protection: ${Number(i.income_protection) ? `${gbp(i.income_protection)}/mo` : "none"}`,
+                  `Critical illness: ${Number(i.critical_illness) ? gbp(i.critical_illness) : "none"}`,
+                  `Employer sick pay: ${Number(i.sick_pay_months) ? `${i.sick_pay_months} month${Number(i.sick_pay_months) === 1 ? "" : "s"}` : "statutory only"}`,
+                  `Savings: ${gbp(i.savings || 0)}`,
+                ].map((t) => (
+                  <Txt key={t} variant="small" style={{ color: colors.onSurfaceSecondary }}>
+                    • {t}
+                  </Txt>
+                ))}
+                <Txt variant="small">“Has” for life cover includes life insurance, death in service and savings.</Txt>
+              </View>
+            ) : null}
             {i?.worry ? <Txt variant="small">Biggest worry: {i.worry}</Txt> : null}
             <Button testID="lead-open-report-button" title="Open full family report" variant="secondary" icon="file-text" onPress={() => router.push(`/report/${l.assessment_id}`)} />
           </View>
@@ -148,5 +181,10 @@ const useStyles = makeStyles((c) => ({
   card: { backgroundColor: c.surfaceSecondary, borderRadius: radius.lg, padding: spacing.xl, gap: spacing.md },
   statusBtn: { flex: 1, height: 44, borderRadius: radius.pill, backgroundColor: c.surfaceTertiary, alignItems: "center", justifyContent: "center" },
   statusOn: { backgroundColor: c.surfaceInverse },
-  gapRow: { flexDirection: "row", gap: spacing.md },
+  table: { gap: 0 },
+  tr: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.sm, gap: spacing.xs },
+  trLine: { borderTopWidth: 1, borderTopColor: c.border },
+  td: { flex: 1 },
+  first: { flex: 1.3 },
+  num: { textAlign: "right" },
 }));

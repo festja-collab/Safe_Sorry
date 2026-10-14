@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only verification of lead detail cover table and existing cover list. Logged in as Mark (adviser) on 390x844 and 375x667, opened Tom's lead (6ace11ac177730ec0ec24062). lead-cover-table shows Needs/Has/Gap columns with values matching the API gaps.{life,income,critical}.{need,have,gap}: Life £353,807 / £216,000 / £137,807; Income protection £2,600/mo / £0/mo / £2,600/mo; Critical illness £240,000 / £0 / £240,000. All non-zero gaps render in red (rgb(191,74,65), weight 700) — green branch not exercised (all gaps > 0 in this seed) but code path is correct. lead-existing-cover list correctly reflects assessment.inputs (life £100,000, death in service 2× salary £104,000, income protection none, critical illness none, employer sick pay 3 months, savings £12,000) and shows the clarifying note about Has for life cover. Layout is clean on both 390 and 375 viewports — table fits (375 bbox w=279px) with right-aligned numeric columns, no clipping or overlap. Status buttons (new/contacted/closed) all toggle and persist via PATCH. 'Open full family report' navigates to /report/{assessment_id} and loads the report screen. No-assessment lead (created directly in Mongo and deleted after) renders the 'This family hadn't completed a check…' copy with no crash and no cover-table. No console errors beyond the pre-login 401s. No deprecated expo packages detected in this screen. All acceptance checks pass; no issues to report.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/screens/lead_cover_390.png",
+    "/app/test_reports/screens/lead_cover_390_b.png",
+    "/app/test_reports/screens/lead_cover_375.png",
+    "/app/test_reports/screens/lead_cover_375_b.png",
+    "/app/test_reports/screens/lead_report_390.png",
+    "/app/test_reports/screens/lead_no_assess.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor: testID generation uses k.split(' ')[0].toLowerCase() — fine for current labels ('Life', 'Income', 'Critical') but renaming any row would silently change the testID. Consider deriving testID from an explicit key."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only)", "frontend": "100%"},
+  "seed_data_creation": "Reset Mark's password hash to env ADVISER_SEED_PASSWORD because a prior iteration had bumped it; cleared db.rate_limits. Created and then deleted a temporary no-assessment lead (TEST_NoAssess) to verify the empty-state branch.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Mark's password had been changed by a prior test; a reset to ADVISER_SEED_PASSWORD was needed before login. If login 401s again, run /tmp/reset_mark.py (bcrypt-hash env value and $set on users). Seeded leads all belong to Tom (tom@example.com) — his assessment_id 6acdf429c72d62cf6cc852f9 is a good fixture for the lead/[id].tsx cover-table flow.",
+  "rca_of_issue": ""
+}

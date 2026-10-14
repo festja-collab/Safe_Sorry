@@ -10,6 +10,8 @@ from pathlib import Path
 from html import escape
 from bson import ObjectId
 import os
+import io
+import csv
 import re
 import json
 import uuid
@@ -790,6 +792,38 @@ def lead_out(d: dict) -> dict:
     return {"id": lead.id, "name": lead.name, "email": lead.email, "phone": lead.phone, "preferred_time": lead.preferred_time,
             "message": lead.message, "status": lead.status, "created_at": lead.created_at, "assessment_id": lead.assessment_id,
             "source_code": lead.source_code, "source_label": source_label(lead.source, lead.source_code), "heard_from": lead.heard_from}
+
+
+CSV_COLUMNS = ["Lead ID", "Date received", "First name", "Last name", "Email", "Phone", "Best time to call", "Status",
+               "Source", "Consent given", "Consent date", "Consent wording", "Adviser", "Firm"]
+
+
+def csv_cell(v) -> str:
+    s = str(v or "")
+    return "'" + s if s[:1] in ("=", "+", "-", "@", "\t", "\r") else s  # stop spreadsheet formula injection
+
+
+@api.get("/adviser/leads/export")
+async def export_leads(status: Optional[str] = None, me: User = Depends(adviser_user)):
+    """Contact details + consent only, as CSV for CRM import (e.g. Greenlight)."""
+    q = {"adviser_id": me.id}
+    if status in ("new", "contacted", "closed"):
+        q["status"] = status
+    docs = await db.leads.find(q).sort("created_at", -1).to_list(5000)
+    firm = await get_firm(me.firm_id)
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(CSV_COLUMNS)
+    for d in docs:
+        lead = Lead.from_mongo(d)
+        first, _, last = lead.name.strip().partition(" ")
+        w.writerow([csv_cell(x) for x in [
+            lead.id, lead.created_at[:16].replace("T", " "), first, last.strip(), lead.email, lead.phone, lead.preferred_time,
+            lead.status, source_label(lead.source, lead.source_code), "Yes" if lead.consent_at else "No",
+            lead.consent_at[:16].replace("T", " "), lead.consent_text, me.name, firm.name if firm else ""]])
+    fname = f"safe-sorry-leads-{datetime.now(timezone.utc):%Y-%m-%d}.csv"
+    return Response(content="\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{fname}"'})
 
 
 @api.get("/adviser/leads")
