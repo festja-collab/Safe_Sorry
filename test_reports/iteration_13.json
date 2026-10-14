@@ -1,0 +1,22 @@
+{
+  "summary": "Verified the public /api/presentation deck end-to-end. All 11 slides render; Next/Back buttons, ArrowRight/ArrowLeft keys, and simulated swipe each advance correctly; counter shows 'n / 11'; cover logo (/api/static/logos/logo_dark_transparent.png, 805x851) and Mark Turner photo (370x422) both load with naturalWidth > 0; mobile (390x844) viewport shows nav visible and slide readable; print emulation (page.emulate_media(media='print')) renders all 11 slides; the compliance-pack link on slide 7 points to /api/compliance-pack and returns 200; zero console errors/warnings. No defects found.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/screens/presentation_mobile.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "presentation.py:148 - the `s` constant and `i` let are reasonable; swipe listener on document works but there is no debounce. In practice, works fine as verified."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Presentation deck is a standalone HTML page served from FastAPI (not an Expo screen). Public URL: https://protect-me-17.preview.emergentagent.com/api/presentation returns 200, 14121 bytes, 11 slides. Original user issue appears to have been a transient preview-env cold-start; backend and frontend had just restarted when it worked. No code defect reproduced across desktop 1280x720, mobile 390x844, keyboard, swipe, or print emulation.",
+  "rca_of_issue": "User-reported outage was a transient preview-environment cold start: supervisor restarts both backend and expo after sleep. Once services were warm (~17s), /api/presentation returned 200. Verified by repeated requests now returning 200 with correct 11-slide HTML (14121 bytes). No code change needed."
+}
