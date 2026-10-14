@@ -68,9 +68,9 @@ async def build_pack(*, app_name: str, adviser: dict, story_prompt: str, limits:
         ("Home at risk", "“Your home is at risk” — “The £[balance] mortgage doesn't disappear. [Partner] would need to find £[payment] every month — [X]% of their take-home pay.”", "Existing cover + savings would not clear mortgage and debts"),
         ("Home safe", "“Your home would be safe” — “Your cover would clear the mortgage. They could stay in the home they know.”", "Cover clears the mortgage"),
         ("Monthly shortfall", "“£[X] missing every month” — “That's roughly [N] weekly food shops a month your family would have to find — or go without.”", "Monthly costs exceed partner's net income"),
-        ("No Bereavement Support Payment", "“Because you're not married or in a civil partnership, [partner] would receive nothing from the state.”", "Cohabiting, not married"),
+        ("No Bereavement Support Payment", "“Because you're not married or in a civil partnership and have no children together, [partner] wouldn't qualify for Bereavement Support Payment.”", "Cohabiting, not married, no children"),
         ("Each child", "“[Child] still needs you for [N] years” — “University alone could cost £28,605 in fees. Would that dream still be possible?”", "Each child under 21"),
-        ("Illness", "“If you couldn't work” — sick pay → SSP → ESA explanation and how long savings would last.", "Always shown"),
+        ("Illness", "“If you couldn't work” — employer sick pay → SSP (up to 28 weeks) → “you may be able to claim New Style ESA … It isn't automatic: it depends on your National Insurance record and a medical assessment” → how long savings would last.", "Always shown"),
     ]
     headlines = [
         ("No dependants", "“No one depends on your income — but your future self does.”"),
@@ -80,11 +80,11 @@ async def build_pack(*, app_name: str, adviser: dict, story_prompt: str, limits:
     ]
 
     assumptions = [
-        ("Income tax", "Personal allowance £12,570 (tapered above £100,000); 20% to £50,270; 40% to £125,140; 45% above", "rUK 2025/26 rates. <b>Scottish rates not modelled.</b>"),
-        ("National Insurance", "8% on £12,570–£50,270; 2% above", "Employee Class 1, 2025/26. Same applied to self-employed (approximation)."),
-        ("Bereavement Support Payment", "Married with children: £3,500 + £350/month × 18. Married, no children: £2,500 + £100/month × 18. Cohabiting: £0", "Current DWP rates"),
-        ("Statutory Sick Pay", f"£118.75/week (≈{gbp(SSP_MONTHLY)}/month) for 28 weeks after employer sick pay", "2025/26 rate; self-employed receive none"),
-        ("ESA after SSP", f"≈£92.05/week (≈{gbp(ESA_MONTHLY)}/month)", "Approximation; eligibility and assessments not modelled"),
+        ("Income tax", "Personal allowance £12,570 (tapered above £100,000); 20% to £50,270; 40% to £125,140; 45% above", "rUK 2026/27 rates (thresholds frozen). <b>Scottish rates not modelled.</b>"),
+        ("National Insurance", "Employed: Class 1 8% on £12,570–£50,270, 2% above. Self-employed: Class 4 6% on £12,570–£50,270, 2% above", "2026/27. The partner is assumed to be employed. Class 2 (voluntary) not modelled."),
+        ("Bereavement Support Payment", "Married, civil partners or cohabiting with children: £3,500 + £350/month × 18. Married, no children: £2,500 + £100/month × 18. Cohabiting, no children: £0", "2026/27 DWP rates (unchanged). Cohabiting parents eligible since Feb 2023. Assumes the deceased met the NI contribution condition."),
+        ("Statutory Sick Pay", f"£123.25/week (≈{gbp(SSP_MONTHLY)}/month) or 80% of average weekly earnings if lower, for up to 28 weeks after employer sick pay", "2026/27 rate; payable from day one; self-employed receive none"),
+        ("New Style ESA after SSP", f"£95.55/week (≈{gbp(ESA_MONTHLY)}/month) for up to 12 months", "2026/27 rate (age 25+). Not automatic: must be claimed; depends on NI record and the Work Capability Assessment; time-limited to 365 days outside the Support Group. Shown to customers as “may be able to claim”."),
         ("Funeral costs", gbp(FUNERAL), "Deducted from resources on death"),
         ("University fees", f"{gbp(UNI_FEES_YEAR)}/year × 3", "Used in wording only, not in the calculation"),
         ("Weekly food shop", "£120", "Used to translate the monthly shortfall into everyday terms"),
@@ -93,7 +93,7 @@ async def build_pack(*, app_name: str, adviser: dict, story_prompt: str, limits:
         ("Life cover need", "Debts (mortgage + other) + funeral + (monthly spending + rent − partner's net income) × 12 × years needed − Bereavement Support Payment. Years needed: until the youngest child is 21 (minimum 5); 5 years if a partner but no children; 0 if no dependants."),
         ("Existing life provision", "Personal life cover + death-in-service (multiple × salary) + savings."),
         ("Savings runway (death)", "Starting pot = cover + death-in-service + savings + BSP lump sum − funeral. If the pot clears all debts, debts are cleared and monthly costs exclude the mortgage; otherwise the mortgage payment continues. Each month the shortfall (costs − partner's net income − BSP monthly) is subtracted until the pot is exhausted."),
-        ("Savings runway (illness)", "Monthly need = spending + housing. Income = full net pay during employer sick pay, then SSP for 28 weeks, then ESA, plus partner's net income and any income protection. Savings fund the shortfall."),
+        ("Savings runway (illness)", "Monthly need = spending + housing. Income = full net pay during employer sick pay, then SSP for up to 28 weeks, then New Style ESA for up to 12 months (if eligible), then nothing, plus partner's net income and any income protection. Savings fund the shortfall."),
         ("Income protection need", "60% of gross monthly income, less existing income protection."),
         ("Critical illness need", "The higher of 2 × annual income or the mortgage balance, less existing cover."),
         ("Not modelled", "Child Benefit, Universal Credit, inflation, investment growth, interest, inheritance tax, trust arrangements, partner's own cover, pension death benefits, Scottish tax, policy definitions or exclusions."),
@@ -126,7 +126,7 @@ async def build_pack(*, app_name: str, adviser: dict, story_prompt: str, limits:
     ]
     processors = [
         ("Emergent (hosting platform)", "Hosts the app and database; provides AI and email gateways", "Confirm data location, DPA and sub-processors with Emergent"),
-        ("Anthropic (Claude AI, via Emergent)", "Receives family check answers (first names, ages, finances — <b>no email or phone</b>) to write the story", "Confirm data retention and training terms"),
+        ("Anthropic (Claude AI, via Emergent)", "Receives ages and financial figures only. <b>Names are replaced with placeholders (e.g. PARTNER, CHILD_A) before sending and swapped back afterwards; no names, email or phone numbers are sent</b>", "Anthropic: commercial API data is not used for training and is deleted within 30 days (longer only if flagged for misuse). Emergent gateway terms being confirmed in writing"),
         ("Email delivery provider (via Emergent)", "Delivers call-back requests to the adviser's inbox", f"Lead emails go to {e(adviser.get('email', ''))}"),
     ]
     controls = [
@@ -143,9 +143,9 @@ async def build_pack(*, app_name: str, adviser: dict, story_prompt: str, limits:
         "Decide whether the AI-written letter is acceptable without human review of each output, or needs changes (e.g. a fixed template)",
         "Privacy notice: a draft is built in (shown at sign-up, on the call-back form and in Profile; acceptance and version are recorded). Approve or amend the wording, including retention periods",
         "Consent: a required tick box is shown before any call-back request is passed to the adviser, and the exact wording and time are recorded. Confirm the wording; marketing consent is not collected today",
-        "Data controller: confirm whether SFL Wealth Management Ltd, Rosemount, or both are the controller(s); DPIA if required",
-        "Retention period for accounts, reports and leads (none set — data is kept until deleted); in-app account and data deletion (not yet built)",
-        "Risk warnings and disclaimers wording (currently: “Estimates only, based on 2025/26 UK tax and benefit rates. Not financial advice.”)",
+        "Data controller: Secure for Life Wealth Management Ltd is the sole data controller for the app (confirmed by Rosemount); DPIA if required",
+        "Retention period for accounts, reports and leads (none set — data is kept until deleted). Deletion is built: clients can delete their account and all data in Profile; advisers can erase a client's data on request from the lead screen; each erasure gets a reference number as proof",
+        "Risk warnings: Rosemount's “not regulated advice” statement is shown before the check starts and on every report; Rosemount's AI letter statement is shown with every letter",
         "Vulnerable customers: content discusses death and serious illness; consider signposting (e.g. bereavement support) and gentler entry wording",
         "Complaints information and the regulatory status wording on the Adviser screen",
         "Annual review of tax and benefit figures; Scottish taxpayers (rates not modelled)",
@@ -212,7 +212,7 @@ pre{{background:#F5F6F8;padding:14px;border-radius:8px;white-space:pre-wrap}} .l
 <h3>4.3 “What it would mean, in real terms” statements</h3>{table(["Statement", "Wording", "Shown when"], [(e(a), e(b), e(c)) for a, b, c in impacts_rows])}
 <h3>4.4 Calls to action and disclaimers</h3>
 <ul><li>Report: “This is fixable. Often for less than a weekly takeaway.” / “A friendly adviser can turn this story into a plan in one short call.” / button “Talk to someone who can help”.</li>
-<li>Report footer: “Estimates only, based on 2025/26 UK tax and benefit rates. Not financial advice.”</li>
+<li>Before the check and on every report: “Please note this is not regulated advice. This Application will only provide you with an AI produced letter setting out any Life Cover requirements you may have. When you have the meeting with the adviser, we will then be able to advise you fully, based on your circumstances.”</li><li>With every letter: “This letter has been produced by an AI tool, based on the information you entered. Assumptions have been made based on today’s figures, thresholds and state benefits, which will change in future. The figures quoted in the letter should be used for illustrative purposes only.”</li><li>Report footer: “Figures based on 2026/27 UK tax and benefit rates.”</li>
 <li>Timeline marker: “The money runs out” — “Everything below this line, your family faces without you — and without money.” Later milestones are labelled “Unfunded”.</li>
 <li>Adviser screen: “Hi, I'm {e(adviser['name'].split(' ')[0])}.” / “{e(adviser['bio'])}” / “Let's close the gap together.” / “Fifteen minutes on the phone is often all it takes…”</li>
 <li>Regulatory status shown: “{firm} is an Appointed Representative of {principal}, which is authorised and regulated by the Financial Conduct Authority.”</li>

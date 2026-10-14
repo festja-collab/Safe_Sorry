@@ -22,7 +22,7 @@ ARTICLES = [
         "body": [
             "Income protection pays you a monthly income — typically up to 60% of your gross salary — if illness or injury stops you working. It keeps paying until you recover, retire or the policy ends.",
             "You'd be far more likely to be off work long-term than to die before retirement. Back problems, mental health and cancer are among the most common reasons for claims.",
-            "Statutory Sick Pay is around £118.75 a week, for up to 28 weeks. For most households, that wouldn't even cover the mortgage.",
+            "Statutory Sick Pay is £123.25 a week (or 80% of your pay if that's lower), for up to 28 weeks (2026/27 rate). For most households, that wouldn't even cover the mortgage.",
             "Check your employer's sick pay first. Then choose a 'deferred period' (how long you wait before payments start) that matches it — a longer wait makes cover cheaper.",
             "If you're self-employed, there's no sick pay at all. Income protection is often the single most important policy you can own.",
         ],
@@ -47,9 +47,9 @@ ARTICLES = [
         "excerpt": "Many people assume the government would step in. The reality is a lot thinner than most of us think.",
         "read_minutes": 4,
         "body": [
-            "If your spouse or civil partner dies, you may get Bereavement Support Payment: £3,500 plus £350 a month for 18 months if you have children, or £2,500 plus £100 a month without.",
-            "If you live together but aren't married, you get nothing. No matter how many years you've shared a home or raised children together.",
-            "If you can't work, Statutory Sick Pay lasts up to 28 weeks. After that, Employment and Support Allowance is roughly £92 a week — and depends on strict assessments.",
+            "If your spouse or civil partner dies, you may get Bereavement Support Payment: £3,500 plus £350 a month for 18 months if you have children, or £2,500 plus £100 a month without. It depends on your partner's National Insurance record.",
+            "If you live together but aren't married, you can now get the higher rate (£3,500 plus £350 a month) only if you have children together. Without children, you get nothing, no matter how many years you've shared a home.",
+            "If you can't work, Statutory Sick Pay lasts up to 28 weeks. After that, you may be able to claim New Style Employment and Support Allowance of about £95.55 a week. It isn't automatic: you have to claim it, it depends on your National Insurance record and a medical assessment, and for most people it stops after a year.",
             "Universal Credit may help, but savings over £6,000 reduce it, and over £16,000 usually stop it entirely.",
         ],
     },

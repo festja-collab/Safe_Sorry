@@ -99,3 +99,12 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Emails (reset code + new lead) now start with a navy band + gold logo (email_header() in server.py, absolute https URL from x-forwarded-host). Invites are shared via share sheet, not email.
 - Lead detail: Needs/Has/Gap table + "What they have now" existing-cover list (from assessment inputs)
 - GET /api/adviser/leads/export[?status=] → CSV (UTF-8 BOM, formula-injection safe) contact + consent only, for CRM import (SFL uses Greenlight; import method TBC by SFL ops). Leads tab: "Download for CRM" button (web download / native share sheet via expo-file-system + expo-sharing, src/export-leads.ts); desktop-wide layout (2-3 card columns ≥900/1280px, max width 1240); lead detail max width 760
+
+## Update (Oct 2026) — Rosemount compliance changes
+- calc.py → 2026/27: SSP £123.25/wk or 80% AWE if lower (28 wks), New Style ESA £95.55/wk for max 12 months (shown as "may be able to claim… isn't automatic"), BSP for cohabiting partners WITH children (higher rate), Class 4 NI 6% for self-employed; results include tax_year
+- Exact Rosemount wording: NOT_ADVICE (assessment step 1 + report top + privacy) and AI_LETTER (under every letter) in frontend/src/compliance-text.ts and backend privacy.py
+- AI pseudonymisation: names → PARTNER/CHILD_A tokens before Claude, swapped back after; user's own name never sent
+- Erasure: POST /api/auth/delete-account (client, password) and POST /api/adviser/leads/{lid}/erase → deletes user, assessments, leads, resets; logs non-identifying db.erasure_log with DEL-XXXX reference. Screens: /delete-account, lead detail "Delete this person's data"
+- Privacy v2026-10-draft-2: SFL sole controller; Rosemount only in AR statement. Firm name now "Secure for Life Wealth Management Ltd" (.env FIRM_NAME + DB)
+- Lead detail: "Client-entered, not yet verified. Confirm at fact-find." notice
+- Compliance reviewer account in test_credentials.md

@@ -34,6 +34,18 @@ type BtnProps = {
   style?: StyleProp<ViewStyle>;
 };
 
+export function Notice({ text, testID, icon = "info" }: { text: string; testID: string; icon?: string }) {
+  const { colors } = useTheme();
+  return (
+    <View testID={testID} style={{ flexDirection: "row", gap: spacing.md, padding: spacing.lg, borderRadius: radius.md, backgroundColor: colors.infoTint, borderLeftWidth: 4, borderLeftColor: colors.info }}>
+      <Feather name={icon as any} size={18} color={colors.info} style={{ marginTop: 2 }} />
+      <Txt variant="small" style={{ flex: 1, color: colors.onSurface }}>
+        {text}
+      </Txt>
+    </View>
+  );
+}
+
 export function Button({ title, onPress, variant = "primary", icon, loading, disabled, testID, style }: BtnProps) {
   const s = useStyles();
   const { colors } = useTheme();

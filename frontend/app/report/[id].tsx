@@ -9,7 +9,8 @@ import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withRep
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api, Assessment, Gap, gbp, Impact, Milestone, Story } from "@/src/api";
-import { Button, ErrorState, IconBadge, Loading, Txt } from "@/src/components/ui";
+import { Button, ErrorState, IconBadge, Loading, Notice, Txt } from "@/src/components/ui";
+import { AI_LETTER, NOT_ADVICE } from "@/src/compliance-text";
 import { makeStyles, radius, spacing, ThemeColors, useTheme } from "@/src/theme";
 
 const HERO = "https://images.unsplash.com/photo-1492269815085-88eb3ffe14e5?crop=entropy&cs=srgb&fm=jpg&q=80&w=1200";
@@ -82,6 +83,7 @@ function StoryCard({ id, initial }: { id: string; initial: Story | null }) {
               <Txt style={{ fontFamily: "Fraunces", fontSize: 18, lineHeight: 26, color: colors.onSurface }}>{story.closing}</Txt>
             </View>
           ) : null}
+          <Notice testID="story-ai-statement" text={AI_LETTER} icon="cpu" />
         </Animated.View>
       )}
     </View>
@@ -241,6 +243,7 @@ export default function Report() {
         </View>
 
         <View style={s.section}>
+          <Notice testID="report-not-advice" text={NOT_ADVICE} icon="alert-circle" />
           {r.has_dependants ? (
             <View style={s.runwayCard} testID="report-runway">
               <Txt variant="label">Savings runway</Txt>
@@ -317,8 +320,8 @@ export default function Report() {
               onPress={() => router.push({ pathname: "/(tabs)/adviser", params: { assessment: q.data.id } })}
             />
           </View>
-          <Txt variant="small" style={{ textAlign: "center" }}>
-            Estimates only, based on 2025/26 UK tax and benefit rates. Not financial advice.
+          <Txt variant="small" style={{ textAlign: "center" }} testID="report-tax-year">
+            Figures based on {r.tax_year ?? "2026/27"} UK tax and benefit rates. State benefits shown depend on eligibility and must be claimed.
           </Txt>
         </View>
       </ScrollView>

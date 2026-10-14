@@ -2,14 +2,21 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
+# All state figures are for the 2026/27 tax year (gov.uk benefit and pension rates 2026 to 2027).
+TAX_YEAR = "2026/27"
 FUNERAL = 5000
-SSP_MONTHLY = 118.75 * 52 / 12
-ESA_MONTHLY = 92.05 * 52 / 12
+SSP_WEEKLY = 123.25          # or 80% of average weekly earnings if lower; payable from day one, up to 28 weeks
+SSP_WEEKS = 28
+ESA_WEEKLY = 95.55           # New Style ESA, age 25+; must be claimed, depends on NI record + Work Capability Assessment
+ESA_MONTHS = 12              # contribution-based ESA (work-related activity group) is limited to 365 days
+SSP_MONTHLY = SSP_WEEKLY * 52 / 12
+ESA_MONTHLY = ESA_WEEKLY * 52 / 12
 UNI_FEES_YEAR = 9535
 WEEKLY_SHOP_MONTH = 120 * 52 / 12  # avg family food shop
 
 
-def net_annual(gross: float) -> float:
+def net_annual(gross: float, self_employed: bool = False) -> float:
+    """Income tax (England/Wales/NI bands) + NI: Class 1 employee 8%/2%, or Class 4 self-employed 6%/2%."""
     if gross <= 0:
         return 0.0
     pa = 12570.0
@@ -25,7 +32,7 @@ def net_annual(gross: float) -> float:
         tax += (gross - 125140) * 0.45
     ni = 0.0
     if gross > 12570:
-        ni += (min(gross, 50270) - 12570) * 0.08
+        ni += (min(gross, 50270) - 12570) * (0.06 if self_employed else 0.08)
     if gross > 50270:
         ni += (gross - 50270) * 0.02
     return gross - tax - ni
@@ -75,14 +82,18 @@ def compute(a: dict) -> dict:
     ci_existing = float(a.get("critical_illness") or 0)
     self_employed = a.get("employment") == "self_employed"
 
-    user_net_m = net_annual(income) / 12
+    user_net_m = net_annual(income, self_employed) / 12
+    ssp_monthly = min(SSP_WEEKLY, 0.8 * income / 52) * 52 / 12
     partner_net_m = net_annual(partner_income) / 12 if has_partner else 0.0
     youngest = min([int(k.get("age") or 0) for k in kids], default=None)
     has_dependants = has_partner or bool(kids)
 
     # ---------- If you died ----------
-    if married:
-        bsp_lump, bsp_month = (3500, 350) if kids else (2500, 100)
+    # Bereavement Support Payment: spouses/civil partners, and (since Feb 2023) cohabiting partners with dependent children
+    if has_partner and kids:
+        bsp_lump, bsp_month = 3500, 350
+    elif married:
+        bsp_lump, bsp_month = 2500, 100
     else:
         bsp_lump, bsp_month = 0, 0
     total_debt = mortgage_bal + debts
@@ -124,20 +135,21 @@ def compute(a: dict) -> dict:
     ill_savings = savings
     ill_runway: Optional[int] = None
     for m in range(1, 601):
-        if self_employed:
-            inc = ESA_MONTHLY
-        elif m <= sick_months:
+        ssp_end = 0 if self_employed else sick_months + SSP_WEEKS * 12 / 52
+        if not self_employed and m <= sick_months:
             inc = user_net_m
-        elif m <= sick_months + 6.5:
-            inc = SSP_MONTHLY
+        elif m <= ssp_end:
+            inc = ssp_monthly
+        elif m <= ssp_end + ESA_MONTHS:
+            inc = ESA_MONTHLY  # only if eligible and claimed
         else:
-            inc = ESA_MONTHLY
+            inc = 0.0
         inc += partner_net_m + ip_existing
         ill_savings -= ill_need - inc
         if ill_savings < 0:
             ill_runway = m - 1
             break
-    ill_long_gap = max(0.0, ill_need - (ESA_MONTHLY + partner_net_m + ip_existing))
+    ill_long_gap = max(0.0, ill_need - (partner_net_m + ip_existing))  # once sick pay and ESA have ended
     ip_need = round(income * 0.6 / 12)
     ip_gap = max(0.0, ip_need - ip_existing)
 
@@ -183,11 +195,11 @@ def compute(a: dict) -> dict:
             "body": f"That's roughly {round(shops)} weekly food shops a month your family would have to find — or go without.",
             "tone": "warning",
         })
-    if has_partner and not married:
+    if has_partner and not married and not kids:
         impacts.append({
             "icon": "alert-circle",
             "title": "No Bereavement Support Payment",
-            "body": f"Because you're not married or in a civil partnership, {partner} would receive nothing from the state.",
+            "body": f"Because you're not married or in a civil partnership and have no children together, {partner} wouldn't qualify for Bereavement Support Payment.",
             "tone": "error",
         })
     for k in kids:
@@ -199,11 +211,13 @@ def compute(a: dict) -> dict:
                 "body": f"University alone could cost {_fmt(UNI_FEES_YEAR * 3)} in fees. Would that dream still be possible?",
                 "tone": "info",
             })
+    esa_note = (f"you may be able to claim New Style ESA, about {_fmt(ESA_MONTHLY)} a month for up to a year. "
+                "It isn't automatic: it depends on your National Insurance record and a medical assessment.")
     ill_body = (
-        "As self-employed, there's no sick pay. You'd fall to around "
-        f"{_fmt(ESA_MONTHLY)} a month from the state."
+        "As self-employed, there's no sick pay. " + esa_note[0].upper() + esa_note[1:]
         if self_employed
-        else f"Your employer pays you for {int(sick_months)} month{'s' if sick_months != 1 else ''}. Then it drops to about {_fmt(SSP_MONTHLY)} a month, and later {_fmt(ESA_MONTHLY)}."
+        else f"Your employer pays you for {int(sick_months)} month{'s' if sick_months != 1 else ''}. Then Statutory Sick Pay of about "
+             f"{_fmt(ssp_monthly)} a month for up to 28 weeks. After that, {esa_note}"
     )
     ill_body += f" Your savings would bridge the gap for {_duration(ill_runway)}."
     impacts.append({"icon": "activity", "title": "If you couldn't work", "body": ill_body, "tone": "warning" if ill_runway is not None else "success"})
@@ -237,6 +251,7 @@ def compute(a: dict) -> dict:
         headline = f"Your family would be okay for {_duration(runway)}. Then what?"
 
     return {
+        "tax_year": TAX_YEAR,
         "headline": headline,
         "has_dependants": has_dependants,
         "runway_months": runway,

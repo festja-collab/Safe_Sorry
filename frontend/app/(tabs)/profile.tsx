@@ -94,6 +94,13 @@ export default function Profile() {
           <Txt style={{ flex: 1, color: colors.onSurface }}>Privacy notice</Txt>
           <Feather name="chevron-right" size={20} color={colors.muted} />
         </Pressable>
+        {user?.role !== "adviser" ? (
+          <Pressable testID="profile-delete-account" onPress={() => router.push("/delete-account")} style={s.row}>
+            <IconBadge name="trash-2" bg={colors.errorTint} fg={colors.error} />
+            <Txt style={{ flex: 1, color: colors.error }}>Delete my account and data</Txt>
+            <Feather name="chevron-right" size={20} color={colors.muted} />
+          </Pressable>
+        ) : null}
         <Button testID="profile-logout-button" title="Log out" variant="ghost" icon="log-out" onPress={async () => { await signOut(); router.replace("/onboarding"); }} />
       </ScrollView>
     </View>

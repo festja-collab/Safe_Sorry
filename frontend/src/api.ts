@@ -119,6 +119,7 @@ export type Impact = { icon: string; title: string; body: string; tone: "error" 
 export type Milestone = { month: number; label: string; kind: "child" | "home" | "runout"; date: string; funded: boolean };
 
 export type Results = {
+  tax_year?: string;
   headline: string;
   has_dependants: boolean;
   runway_months: number | null;

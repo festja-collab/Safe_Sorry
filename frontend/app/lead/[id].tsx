@@ -1,12 +1,13 @@
 import { Feather } from "@react-native-vector-icons/feather";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import { Linking, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api, gbp, Lead, LeadStatus, niceDate } from "@/src/api";
 import { STATUS_LABEL, StatusPill } from "@/src/components/lead-card";
-import { Button, ErrorState, Loading, Txt } from "@/src/components/ui";
+import { Button, ErrorState, Loading, Notice, Txt } from "@/src/components/ui";
 import { makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
 export default function LeadDetail() {
@@ -25,6 +26,30 @@ export default function LeadDetail() {
       qc.invalidateQueries({ queryKey: ["adviser-stats"] });
     },
   });
+  const [confirmErase, setConfirmErase] = useState(false);
+  const erase = useMutation({
+    mutationFn: () => api<{ reference: string; completed_at: string }>(`/adviser/leads/${id}/erase`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["adviser-leads"] });
+      qc.invalidateQueries({ queryKey: ["adviser-stats"] });
+    },
+  });
+
+  if (erase.data)
+    return (
+      <View style={[s.root, { paddingTop: insets.top + spacing["2xl"], padding: spacing.xl, gap: spacing.lg }]} testID="lead-erased">
+        <Feather name="check-circle" size={48} color={colors.success} />
+        <Txt variant="display">This person’s data has been deleted</Txt>
+        <Txt>Their account, family checks, AI letters and call-back requests have been permanently removed from the app.</Txt>
+        <Txt variant="title" testID="lead-erase-reference">
+          Reference: {erase.data.reference}
+        </Txt>
+        <Txt variant="small">
+          Completed {new Date(erase.data.completed_at).toLocaleString("en-GB")}. Quote this reference when you confirm to the client. Remember to also delete any copies outside the app (e.g. lead emails, downloaded files).
+        </Txt>
+        <Button testID="lead-erase-done" title="Back to leads" onPress={() => router.replace("/(tabs)/leads")} />
+      </View>
+    );
 
   const header = (
     <View style={[s.header, { paddingTop: insets.top + spacing.sm }]}>
@@ -112,6 +137,7 @@ export default function LeadDetail() {
         {r ? (
           <View style={s.card} testID="lead-family-summary">
             <Txt variant="label">Their family story</Txt>
+            <Notice testID="lead-unverified" text="Client-entered, not yet verified. Confirm at fact-find." icon="alert-triangle" />
             <Txt variant="title">{r.headline}</Txt>
             {family.map((f) => (
               <Txt key={f} variant="small" style={{ color: colors.onSurfaceSecondary }}>
@@ -169,6 +195,20 @@ export default function LeadDetail() {
         ) : (
           <Txt variant="small">This family hadn’t completed a check when they asked for a call.</Txt>
         )}
+        <View style={s.card} testID="lead-erase-section">
+          <Txt variant="label">Data request</Txt>
+          <Txt variant="small">If this person asks you to delete their data, this permanently removes their account, family checks, AI letters and call-back requests from the app.</Txt>
+          {erase.isError ? <Txt color={colors.error}>{(erase.error as Error).message}</Txt> : null}
+          {confirmErase ? (
+            <View style={{ gap: spacing.sm }}>
+              <Txt style={{ color: colors.error }}>Are you sure? This can’t be undone.</Txt>
+              <Button testID="lead-erase-confirm" title="Yes, permanently delete" icon="trash-2" loading={erase.isPending} onPress={() => erase.mutate()} />
+              <Button testID="lead-erase-cancel" title="Cancel" variant="ghost" onPress={() => setConfirmErase(false)} />
+            </View>
+          ) : (
+            <Button testID="lead-erase-button" title="Delete this person’s data" variant="secondary" icon="trash-2" onPress={() => setConfirmErase(true)} />
+          )}
+        </View>
       </ScrollView>
     </View>
   );

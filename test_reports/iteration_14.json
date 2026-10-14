@@ -1,0 +1,39 @@
+{
+  "summary": "Rosemount compliance review changes fully verified. Backend: 20/20 pytest cases pass in /app/backend/tests/test_iteration14.py — calc.compute returns tax_year '2026/27', SSP capped at min(123.25, 0.8*income/52) for the £8k low-earner, self-employed Class 4 NI (6%) gives higher net pay than employed (8%) at the same income, BSP rules correct (cohabiting+kids no 'No BSP' impact; cohabiting without kids shows it), illness impact body contains 'isn't automatic'. POST /api/auth/delete-account: wrong password → 400, correct password → 200 with DEL-XXXXXXXX reference, cascading deletion of user/assessments/leads/password_resets, token invalidated afterwards, adviser (Mark) gets 400 trying to self-delete. POST /api/adviser/leads/{lid}/erase: Mark successfully erases a throwaway client's lead+account+assessments, client calling it → 403, nonexistent lead → 404. Pseudonymisation: scrub() runs before LlmChat(), unscrub restores names; one real story round-trip for Alice/Bob/Charlie returned no leftover CHILD_* or PARTNER tokens. GET /api/privacy returns version '2026-10-draft-2', 'The AI tool' and 'Deleting your data' sections present, Important section carries NOT_ADVICE wording, 'Secure for Life Wealth Management Ltd' is the controller with Rosemount only in the AR status line. /api/compliance-pack is 200 and contains '2026/27' and '£123.25' with no '2025/26', '118.75' or '92.05'. Frontend (390x844): assessment-not-advice shows on first assessment step with exact NOT_ADVICE wording; Tom's cached report shows report-not-advice near the top, story-ai-statement under the AI letter, and report-tax-year footer 'Figures based on 2026/27 UK tax and benefit rates'. End-to-end delete flow for a throwaway client works: profile-delete-account → /delete-account → password + tick → submit → delete-account-reference shown (e.g. DEL-CD051DB0) → Done lands on /onboarding → login attempt fails. Mark's lead detail shows lead-unverified with the exact text 'Client-entered, not yet verified. Confirm at fact-find.' and lead-erase-button is present. Adviser tab firm block renders 'Secure for Life Wealth Management Ltd' at the top. One pre-existing side-effect: Mark's seeded password had been altered by an earlier iteration (password_version=3); credentials.md says to restore it, which this testing agent did (bcrypt-rehashed back to the documented value). No deprecated Expo packages or SafeAreaView issues detected.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration14.py",
+    "/app/test_reports/pytest/iteration14.xml",
+    "/app/test_reports/screens/itr14_assess_not_advice.png",
+    "/app/test_reports/screens/itr14_report_top.png",
+    "/app/test_reports/screens/itr14_report_bottom.png",
+    "/app/test_reports/screens/itr14_delete_done.png",
+    "/app/test_reports/screens/itr14_lead_detail2.png",
+    "/app/test_reports/screens/itr14_adviser_footer.png"
+  ],
+  "action_items": [
+    "Mark's seeded password had been changed by a previous iteration (password_version=3 in Mongo). I restored the documented password by rehashing it in-place. If this keeps happening between iterations, consider either (a) always restoring Mark's password at the end of change-password tests, or (b) making the seed overwrite the hash when it detects a drift from env, in a dev-only mode."
+  ],
+  "critical_code_review_comments": [
+    "calc.compute line 86: SSP cap formula (min(SSP_WEEKLY, 0.8*income/52)*52/12) is correct and matches 2026/27 GOV.UK guidance; low-earner path verified at £8k.",
+    "server.py story endpoint (lines 585-650): pseudonymisation happens before the facts dict is built and before LlmChat is instantiated. unscrub() restores aliased names and strips any leftover CHILD_* / PARTNER tokens — the real round-trip test confirms this works.",
+    "privacy.py: controller line names 'Secure for Life Wealth Management Ltd' and Rosemount appears only in the AR status sentence, matching the compliance brief.",
+    "compliance_pack.py line 85-87: BSP, SSP, ESA assumption rows and figures are correctly updated to 2026/27 with the correct amounts.",
+    "server.py adviser_erase (line 937): happy path, 403 for clients and 404 for cross-adviser all behave correctly."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration14.py (new)",
+    "db.users: restored mark.turner@sflwealth.co.uk password_hash to the documented value per /app/memory/test_credentials.md"
+  ],
+  "success_rate": {"backend": "100% (20/20)", "frontend": "100% on all critical compliance flows"},
+  "seed_data_creation": "A few TEST_* throwaway clients were created and immediately deleted via the delete-account/erase endpoints as part of the test flows (nothing persistent). The compliance.review@safesorry-test.co.uk, tom@example.com and Mark accounts were NOT deleted.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "If Mark's login starts returning 401, his password_version has drifted. The documented value in /app/memory/test_credentials.md is IupwtaavjJ2CfMKIFjRhfott; restore via: `python -c 'from pymongo import MongoClient; import bcrypt; MongoClient(\"mongodb://localhost:27017\")[\"test_database\"].users.update_one({\"email\":\"mark.turner@sflwealth.co.uk\"},{\"$set\":{\"password_hash\": bcrypt.hashpw(b\"IupwtaavjJ2CfMKIFjRhfott\", bcrypt.gensalt()).decode(),\"must_change_password\":False}})'`. The begin-your-family-check onboarding button goes to register mode (with auth-name-input), the login button goes to login mode (without auth-name-input); don't toggle inside the register screen or you'll lose the name field. For new clients, the first-login flow auto-redirects to /assessment — use `page.goto('/profile')` directly to reach the Profile tab for the delete flow."
+}

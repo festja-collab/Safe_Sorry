@@ -9,7 +9,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api, Assessment } from "@/src/api";
 import { useAuth } from "@/src/auth";
-import { Button, Field, IconBadge, Txt } from "@/src/components/ui";
+import { Button, Field, IconBadge, Notice, Txt } from "@/src/components/ui";
+import { NOT_ADVICE } from "@/src/compliance-text";
 import { makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
 type Kid = { name: string; age: string };
@@ -363,6 +364,7 @@ export default function AssessmentScreen() {
             {step.title}
           </Txt>
           {step.subtitle ? <Txt>{step.subtitle}</Txt> : null}
+          {idx === 0 ? <Notice testID="assessment-not-advice" text={NOT_ADVICE} icon="alert-circle" /> : null}
           <View style={{ gap: spacing.md, marginTop: spacing.sm }}>{step.render()}</View>
           {submit.isError ? (
             <Txt testID="assessment-error" color={colors.error}>

@@ -565,7 +565,7 @@ STORY_SYSTEM = """You are a compassionate UK protection adviser and gifted write
 You write short, deeply human stories that help a parent or partner FEEL what an unprotected gap would mean for the people they love - not just see numbers.
 Rules:
 - Second person ("you"), warm, honest, gentle but unflinching. British English. No cliches, no hype, no sales pressure, no jargon.
-- Use the family's real names and ages. Paint concrete everyday scenes (school runs, the kitchen table, birthdays, the front door of their home).
+- Use the family's placeholder names exactly as given (e.g. PARTNER, CHILD_A) wherever you would use their names, and their ages. Paint concrete everyday scenes (school runs, the kitchen table, birthdays, the front door of their home).
 - Weave in at most 3 key numbers naturally (e.g. the month the money runs out, the monthly shortfall, the mortgage).
 - If the family is well protected, celebrate it honestly and mention any remaining weak spot.
 - If they have no dependants, focus on their own future self and illness risk.
@@ -581,13 +581,34 @@ async def story(aid: str, user: User = Depends(current_user)):
     await limiter.take(db.rate_limits, namespace="story-user", key=user.id, limit=STORIES_PER_DAY, window=DAY,
                        message="You've reached today's limit for new stories. Please try again tomorrow.")
     i, r = a.inputs, a.results
+    # Data minimisation: the AI never sees names, emails or phone numbers. Names become placeholders and are swapped back after.
+    aliases = {}
+    partner_name = (i.get("partner_name") or "").strip()
+    if partner_name:
+        aliases["PARTNER"] = partner_name
+    kids_out = []
+    for n, k in enumerate(i.get("children") or []):
+        token = f"CHILD_{chr(65 + n)}"
+        if (k.get("name") or "").strip():
+            aliases[token] = k["name"].strip()
+        kids_out.append({"name": token, "age": k.get("age")})
+    own = [(i.get("first_name") or "").strip(), (user.name or "").strip().split(" ")[0]]
+
+    def scrub(text):
+        if not isinstance(text, str):
+            return text
+        for token, real in aliases.items():
+            text = re.sub(rf"\b{re.escape(real)}\b", token, text, flags=re.I)
+        for real in filter(None, own):
+            text = re.sub(rf"\b{re.escape(real)}\b", "you", text, flags=re.I)
+        return text
+
     facts = {
-        "name": i.get("first_name") or user.name,
         "age": i.get("age"),
         "relationship": i.get("relationship"),
-        "partner_name": i.get("partner_name"),
-        "children": i.get("children"),
-        "biggest_worry": i.get("worry"),
+        "partner_name": "PARTNER" if partner_name else None,
+        "children": kids_out,
+        "biggest_worry": scrub(i.get("worry")),
         "housing": i.get("housing"),
         "monthly_mortgage_or_rent": i.get("monthly_housing"),
         "mortgage_balance": i.get("mortgage_balance"),
@@ -604,7 +625,7 @@ async def story(aid: str, user: User = Depends(current_user)):
             "long_term_monthly_shortfall": r.get("monthly_gap_illness"),
         },
         "critical_illness_gap": r["gaps"]["critical"]["gap"],
-        "upcoming_milestones": [m["label"] + " (" + m["date"] + ")" for m in r.get("milestones", [])][:6],
+        "upcoming_milestones": [scrub(m["label"]) + " (" + m["date"] + ")" for m in r.get("milestones", [])][:6],
     }
     chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"story-{aid}-{uuid.uuid4()}",
                    system_message=STORY_SYSTEM).with_model("anthropic", "claude-sonnet-5-5")
@@ -622,10 +643,16 @@ async def story(aid: str, user: User = Depends(current_user)):
         raw = await asyncio.wait_for(run(), timeout=90)
         m = re.search(r"\{.*\}", raw, re.S)
         data = json.loads(m.group(0) if m else raw)
+
+        def unscrub(text: str) -> str:
+            for token, real in aliases.items():
+                text = text.replace(token, real)
+            return re.sub(r"\bCHILD_[A-Z]\b", "your child", text).replace("PARTNER", "your partner")
+
         result = {
-            "title": str(data.get("title", "Your family's story")),
-            "paragraphs": [str(p) for p in data.get("paragraphs", [])][:4],
-            "closing": str(data.get("closing", "")),
+            "title": unscrub(str(data.get("title", "Your family's story"))),
+            "paragraphs": [unscrub(str(p)) for p in data.get("paragraphs", [])][:4],
+            "closing": unscrub(str(data.get("closing", ""))),
         }
         if not result["paragraphs"]:
             raise ValueError("empty story")
@@ -873,6 +900,43 @@ async def update_lead(lid: str, body: LeadStatusIn, me: User = Depends(adviser_u
     d = await owned_lead(lid, me)
     await db.leads.update_one({"_id": d["_id"], "adviser_id": me.id}, {"$set": {"status": body.status}})
     return {"ok": True, "status": body.status}
+
+
+# ---------------- Right to erasure (UK GDPR Art. 17) ----------------
+async def erase_client(user_id: str, *, by: str, reason: str) -> dict:
+    """Deletes the client's account, every assessment/AI letter and every call-back request. Keeps only a
+    non-identifying erasure record (reference, date, who actioned it) as proof the request was completed."""
+    counts = {
+        "assessments": (await db.assessments.delete_many({"user_id": user_id})).deleted_count,
+        "callback_requests": (await db.leads.delete_many({"user_id": user_id})).deleted_count,
+        "account": (await db.users.delete_one({"_id": ObjectId(user_id), "role": "client"})).deleted_count,
+    }
+    await db.password_resets.delete_many({"user_id": user_id})
+    ref = "DEL-" + secrets.token_hex(4).upper()
+    await db.erasure_log.insert_one({"reference": ref, "at": now_iso(), "actioned_by": by, "reason": reason, "deleted": counts})
+    return {"ok": True, "reference": ref, "deleted": counts, "completed_at": now_iso()}
+
+
+class DeleteAccountIn(BaseModel):
+    password: str = Field(min_length=1, max_length=128)
+
+
+@api.post("/auth/delete-account")
+async def delete_account(body: DeleteAccountIn, user: User = Depends(session_user)):
+    if user.role != "client":
+        raise HTTPException(400, "Adviser accounts can't be deleted here. Please contact your firm administrator.")
+    msg = "Too many attempts. Please wait 15 minutes and try again."
+    await limiter.check(db.rate_limits, namespace="delete-fail", key=user.id, limit=5, window=LOGIN_WINDOW, message=msg)
+    if not bcrypt.checkpw(body.password.encode(), user.password_hash.encode()):
+        await limiter.record(db.rate_limits, namespace="delete-fail", key=user.id, window=LOGIN_WINDOW)
+        raise HTTPException(400, "That password isn't right")
+    return await erase_client(user.id, by="client (self-service)", reason="Client deleted their account in the app")
+
+
+@api.post("/adviser/leads/{lid}/erase")
+async def adviser_erase(lid: str, me: User = Depends(adviser_user)):
+    d = await owned_lead(lid, me)
+    return await erase_client(d["user_id"], by=f"adviser {me.name} ({me.id})", reason="Client asked their adviser to delete their data")
 
 
 @api.get("/adviser/stats")
