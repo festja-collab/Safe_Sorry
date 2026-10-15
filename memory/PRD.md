@@ -108,3 +108,4 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Privacy v2026-10-draft-2: SFL sole controller; Rosemount only in AR statement. Firm name now "Secure for Life Wealth Management Ltd" (.env FIRM_NAME + DB)
 - Lead detail: "Client-entered, not yet verified. Confirm at fact-find." notice
 - Compliance reviewer account in test_credentials.md
+- Launch reel: backend/scripts_make_reel.py (PIL frames + imageio-ffmpeg) → /api/static/reels/safe-sorry-launch-reel.mp4 (1080x1920, 27s, 30fps, silent track) + cover jpg. Hook: phone battery % vs "how long would your family's money last?". Uses demo screenshots (Tom). Ends with not-advice + AR disclosure
