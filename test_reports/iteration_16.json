@@ -1,0 +1,29 @@
+{
+  "summary": "Iteration 16 - Verified the full Safe > Sorry Instagram marketing kit (coming-soon reel, award reel, 6-slide launch carousel, 15s stories). Backend: 29/29 asset tests pass + 17/17 legacy /api/reels tests still green. All 5 mp4s served from https://protect-me-17.preview.emergentagent.com/api/reels/file/<name> return 200 (no Range) and 206 with correct Content-Range for Range: bytes=0-1023; ffmpeg (imageio_ffmpeg binary) confirms every file is 1080x1920, H.264 High / yuv420p, 30 fps, AAC stereo audio, and the exact durations required: launch 27.00s, coming-soon 27.00s, award 21.40s, both stories 15.00s. ?download=1 attaches a correctly-named Content-Disposition on every mp4. Carousel: all six safe-sorry-carousel-N.jpg are 1080x1350; safe-sorry-carousel.zip contains exactly those six entries and ?download=1 attaches the zip. Visual review (frames extracted at the required timestamps, viewed inline): (a) safe-sorry-coming-soon ends with 'Coming soon.' + 'Follow us to be first to try it' + 'Better safe than sorry.' + both compliance lines; (b) safe-sorry-award-reel ends with 'Coming soon' + 'Follow to be first to try it' + compliance lines, with the ~2.5s frame showing the gold medal, 'Protection Adviser of the Year 2026' and 'Next Intelligence Awards', and the ~6.5s frame showing Mark Turner's photo, 'Mark Turner', 'Secure for Life Wealth Management', 'Award-winning protection adviser'; (c) both 15s stories end with 'Know your number.' + 'Link in bio' + sub-line ('Coming soon · free' / 'Free on iPhone & Android') + both compliance lines. Carousel slide 6 shows 'Coming soon.' + 'Follow to be first to try it' + full not-regulated-advice + Appointed-Representative lines; slides 1-5 show '1/6 swipe >' ... '5/6 swipe >' and the 'safe > sorry · not regulated advice' footer. Edge-clipping test (brightness scan of leftmost/rightmost 40px columns at 25%/50%/75% of each video) is 0 bright pixels for every sampled frame - no text is cut off. Frontend: /api/reels at 390x844 renders 5 video cards (all with correct src+poster+titles), the carousel card with 6 thumbnails, 11 download buttons (>=44px), and the 'Download all 6 slides (zip)' button (334x46). Clicking the zip button and the award-reel download button both triggered real file downloads with the right filenames and zero main-frame navigations (confirming the historical reload-loop fix still holds for the new assets). The 7 OCR-based assertions were skipped because the sandbox has no tesseract binary (apt repo doesn't carry it); the equivalent checks were done by eye on the extracted frames and are reported here.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_reels_assets.py",
+    "/app/backend/tests/test_reels.py",
+    "/app/test_reports/pytest/iteration16_reels_assets.xml",
+    "/app/test_reports/screens/reels_iter16_iphone.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "reels.py still reads the full file into memory on 200 responses (p.read_bytes()). Fine for ~1-2 MB reels but should switch to FileResponse / StreamingResponse if a reel ever grows past ~10 MB.",
+    "reel_variants.py imports MARK = Image.open(SRC/'mark.jpg') at module scope - this runs even on `import reel_variants` (e.g. from scripts_make_reel.main) and will crash on import if the file is ever missing. Consider lazy-loading inside circle_photo()."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_reels_assets.py (new)"
+  ],
+  "success_rate": { "backend": "100%", "frontend": "100%" },
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The sandbox has pytesseract installed (pip) but NOT the tesseract binary (apt-get can't find tesseract-ocr in the available repos). OCR-based tests therefore skip via `shutil.which('tesseract')`. For visual text verification, fall back to extracting frames with imageio_ffmpeg and viewing them with view_bulk - this works great for the 1080x1920 reels and the 1080x1350 carousel slides."
+}

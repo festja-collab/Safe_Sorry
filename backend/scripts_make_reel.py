@@ -59,14 +59,17 @@ def text_block(img, text, f, y, color, t_in, t, maxw=900, spacing=1.18, align="c
     return y + len(lines) * lh
 
 
-def bg():
-    img = Image.new("RGBA", (W, H), NAVY + (255,))
-    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+def bg(h=H):
+    img = Image.new("RGBA", (W, h), NAVY + (255,))
+    glow = Image.new("RGBA", (W, h), (0, 0, 0, 0))
     ImageDraw.Draw(glow).ellipse((-300, -200, 900, 900), fill=GOLD + (38,))
     return Image.alpha_composite(img, glow.filter(ImageFilter.GaussianBlur(160)))
 
 
 BG = bg()
+AR_LINE = ("Secure for Life Wealth Management Ltd is an Appointed Representative of Rosemount Financial "
+           "Solutions (IFA) Limited, which is authorised and regulated by the Financial Conduct Authority.")
+NOT_ADVICE_LINE = "Estimates only. This is not regulated advice. Figures are illustrative, based on 2026/27 rates."
 
 
 def battery(img, cx, cy, level, label, label_color=NAVY, scale=1.0):
@@ -169,19 +172,24 @@ def s_benefits(img, t):
         img.alpha_composite(layer)
 
 
-def s_end(img, t):
-    a = ease(t / 0.6)
-    logo = LOGO.copy()
-    logo.putalpha(logo.getchannel("A").point(lambda v: int(v * a)))
-    img.alpha_composite(logo, ((W - logo.width) // 2, 260 + int((1 - a) * 40)))
-    y = 260 + logo.height + 60
-    y = text_block(img, "Know your number.", SERIF(88, "Bold"), y, WHITE, 0.5, t)
-    text_block(img, "Download Safe > Sorry · free", SANS(56), y + 40, GOLD, 0.9, t)
-    text_block(img, "Estimates only. This is not regulated advice. Figures are illustrative, based on 2026/27 rates.",
-               SANS(30, "Medium"), 1420, MUTED, 1.3, t, maxw=860)
-    text_block(img, "Secure for Life Wealth Management Ltd is an Appointed Representative of Rosemount Financial "
-               "Solutions (IFA) Limited, which is authorised and regulated by the Financial Conduct Authority.",
-               SANS(28, "Medium"), 1530, MUTED, 1.3, t, maxw=860)
+def make_end(headline="Know your number.", cta="Download Safe > Sorry · free", sub=None, small_y=1420):
+    def s_end(img, t):
+        a = ease(t / 0.6)
+        logo = LOGO.copy()
+        logo.putalpha(logo.getchannel("A").point(lambda v: int(v * a)))
+        img.alpha_composite(logo, ((W - logo.width) // 2, 260 + int((1 - a) * 40)))
+        y = 260 + logo.height + 60
+        y = text_block(img, headline, SERIF(88, "Bold"), y, WHITE, 0.5, t)
+        y = text_block(img, cta, SANS(60), y + 40, GOLD, 0.9, t)
+        if sub:
+            text_block(img, sub, SANS(44, "SemiBold"), y + 20, WHITE, 1.2, t)
+        y2 = text_block(img, NOT_ADVICE_LINE, SANS(30, "Medium"), small_y, MUTED, 1.3, t, maxw=860)
+        text_block(img, AR_LINE, SANS(28, "Medium"), y2 + 20, MUTED, 1.3, t, maxw=860)
+    s_end.is_end = True
+    return s_end
+
+
+s_end = make_end()
 
 
 SCENES = [(0, 3.4, s_hook), (3.4, 7.4, s_question), (7.4, 10.6, s_nobody), (10.6, 14.4, s_find),
@@ -189,37 +197,47 @@ SCENES = [(0, 3.4, s_hook), (3.4, 7.4, s_question), (7.4, 10.6, s_nobody), (10.6
 DUR = SCENES[-1][1]
 
 
-def frame(t):
+def frame(t, scenes=None):
+    scenes = scenes or SCENES
     img = BG.copy()
-    for start, end, fn in SCENES:
-        if start <= t < end or (fn is s_end and t >= start):
+    for start, end, fn in scenes:
+        last = getattr(fn, "is_end", False)
+        if start <= t < end or (last and t >= start):
             local = t - start
             fn(img, local)
-            fade_out = 0.0 if fn is s_end else ease((t - (end - 0.3)) / 0.3)
+            fade_out = 0.0 if last else ease((t - (end - 0.3)) / 0.3)
             if fade_out > 0:
                 img = Image.blend(img, BG, fade_out)
             break
     return img.convert("RGB")
 
 
-def main():
+def render(scenes, name, cover_t=1.9):
     ff = imageio_ffmpeg.get_ffmpeg_exe()
-    out = OUT / "safe-sorry-launch-reel.mp4"
+    out = OUT / f"{name}.mp4"
     p = subprocess.Popen([ff, "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
                           "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100", "-shortest",
                           "-c:v", "libx264", "-pix_fmt", "yuv420p", "-profile:v", "high", "-crf", "18", "-preset", "medium",
                           "-c:a", "aac", "-movflags", "+faststart", str(out)], stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    n = int(DUR * FPS)
-    for i in range(n):
-        f = frame(i / FPS)
+    dur = scenes[-1][1]
+    for i in range(int(dur * FPS)):
+        f = frame(i / FPS, scenes)
         p.stdin.write(f.tobytes())
-        if i == int(1.9 * FPS):
-            f.save(OUT / "safe-sorry-launch-reel-cover.jpg", quality=92)
+        if i == int(cover_t * FPS):
+            f.save(OUT / f"{name}-cover.jpg", quality=92)
     p.stdin.close()
     p.wait()
-    for name, ts in [("check_hook", 2.2), ("check_q", 6.5), ("check_find", 13.5), ("check_report", 17.5), ("check_ben", 21.5), ("check_end", 26.5)]:
-        frame(ts).resize((360, 640)).save(f"/tmp/{name}.jpg")
     print("done", out, out.stat().st_size)
+
+
+def main():
+    import sys
+    from reel_variants import VARIANTS
+    for n in sys.argv[1:] or ["safe-sorry-launch-reel"]:
+        if n == "safe-sorry-launch-reel":
+            render(SCENES, n)
+        else:
+            render(*VARIANTS[n])
 
 
 if __name__ == "__main__":
