@@ -109,3 +109,4 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Lead detail: "Client-entered, not yet verified. Confirm at fact-find." notice
 - Compliance reviewer account in test_credentials.md
 - Launch reel: backend/scripts_make_reel.py (PIL frames + imageio-ffmpeg) → /api/static/reels/safe-sorry-launch-reel.mp4 (1080x1920, 27s, 30fps, silent track) + cover jpg. Hook: phone battery % vs "how long would your family's money last?". Uses demo screenshots (Tom). Ends with not-advice + AR disclosure
+- Reels served via backend/reels.py: GET /api/reels (mobile download page, playsinline video + Download buttons) and /api/reels/file/{name} with HTTP Range (206) support — fixes iPhone Safari playback (StaticFiles ignored Range). ?download=1 = attachment

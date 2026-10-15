@@ -33,6 +33,7 @@ from invite import invite_page  # noqa: E402
 from presentation import build_presentation  # noqa: E402
 from logo_concepts import concept_sheet  # noqa: E402
 from try_page import try_page  # noqa: E402
+from reels import router as reels_router  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from privacy import PRIVACY_VERSION, privacy_sections  # noqa: E402
 import hashlib  # noqa: E402
@@ -1172,6 +1173,7 @@ async def seed_default_adviser():
 
 
 app.include_router(api)
+app.include_router(reels_router, prefix="/api")
 app.mount("/api/static", StaticFiles(directory=ROOT_DIR / "static"), name="static")
 app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
