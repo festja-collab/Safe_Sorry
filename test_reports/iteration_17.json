@@ -1,0 +1,40 @@
+{
+  "summary": "Iteration 17 — Adviser desk (browser page + APIs) tested end-to-end. 14/14 backend pytest cases pass (desk HTML + security headers, desk login role/password/TTL, refresh, adviser leads access via desk token, lead detail, CSV export, cross-adviser 404, lead_email_html with desk_url View-lead button passes emailer._assert_safe_email, and app-auth regression). 10/10 browser flow steps pass (deep-link to login, wrong-password error, login lands on lead with name/phone/email/unverified-notice/cover-table/existing-cover, session persists across reload, back-to-list and lead-row clicks, CSV download, cross-adviser friendly error, idle timeout simulation via sessionStorage, log out, client-account 403 message). Note: ingress adds extra Cache-Control directives (observed 'no-store, no-cache, must-revalidate') but 'no-store' is present as required. One tiny cosmetic nit: the header 'Log out' button stays visible on the login card after a failed client-account login (not re-hidden by showLogin()).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/desk", "issue": "Ingress appends to Cache-Control so response header is 'no-store, no-cache, must-revalidate' instead of exactly 'no-store' set by the route. Still contains no-store so functionally meets spec, but if main agent wants exact match it may need to override at ingress/response layer."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "desk.py header #logout button", "issue": "After a failed /api/desk/login attempt from the login screen (e.g. STEP10 client-account 403), the top-right 'Log out' button remains visible on the login card because showLogin() does not explicitly set document.getElementById('logout').hidden=true. logout() does, but showLogin() can be reached from the login-failure path without going through logout(). Cosmetic only (clicking it just calls logout() → showLogin() again). Reference: /app/backend/desk.py:46,60", "testID": "logout", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_desk.py",
+    "/app/test_reports/pytest/iteration17_desk.xml"
+  ],
+  "action_items": [
+    "(Optional, cosmetic) In desk.py showLogin() set document.getElementById('logout').hidden=true and clear #who, so the Log out chip doesn't linger when the login card is shown after a failed login or deep-link.",
+    "(Optional) Consider stripping ingress Cache-Control additions if the exact 'no-store' value is a hard requirement — not blocking, no-store directive is still honoured."
+  ],
+  "critical_code_review_comments": [
+    "desk.py is a single-file HTML+inline JS (~140 lines) — manageable; no DRY concerns for current size.",
+    "server.py desk_login reuses login() correctly for rate limiting / timing / password check, then enforces adviser role and reads password_version for the 30-min token. Clean.",
+    "lead_email_html correctly includes View lead button only when desk_url is passed; href is https and same-host so emailer._assert_safe_email passes.",
+    "No MongoDB _id leaking in /api/adviser/leads list or detail responses (verified)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_desk.py (new)"
+  ],
+  "success_rate": {"backend": "100% (14/14)", "frontend": "100% (10/10 flow steps)"},
+  "seed_data_creation": "None. Used seeded test accounts desk.adviser@example.com / desk.client@example.com and their existing 'Jane Client' lead (6ad755f93f289e4fb34cd701). Cleared db.rate_limits before test run to avoid 429s.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend tests live in /app/backend/tests/test_desk.py (pytest, 14 cases, uses pyjwt for TTL claim read). Cross-adviser 404 is tested against lead 6acdf449c72d62cf6cc852fa which belongs to a different adviser; test adviser's own Jane Client lead is 6ad755f93f289e4fb34cd701. If you see 429s, run mongosh --eval \"db.getSiblingDB('test_database').rate_limits.deleteMany({})\" to reset limits. Public URL = EXPO_PUBLIC_BACKEND_URL = https://protect-me-17.preview.emergentagent.com (frontend/.env uses EXPO_PUBLIC_BACKEND_URL not EXPO_BACKEND_URL).",
+  "rca_of_issue": "N/A — no bugs required RCA. One cosmetic nit (Log out button visibility on login screen) has an identified root cause: showLogin() in /app/backend/desk.py does not reset the #logout button's hidden state; only logout() does. Fix: add document.getElementById('logout').hidden=true inside showLogin()."
+}

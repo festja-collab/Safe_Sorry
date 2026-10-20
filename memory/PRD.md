@@ -114,3 +114,8 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Insure reel (backend/reel_insure.py): phone/car/holiday insured ✓ → 'My income ?' → £1,050,000 lifetime earnings (illustrative) → 'Most people never check' → app + Coming soon. /api/reels/file/safe-sorry-insure-reel.mp4
 - Myth-buster reel (backend/reel_myth.py): 'death in service is enough' → 3 facts (stops when you leave job, only pays on death, 4×£35k=£140k vs £180k mortgage illustrative) → app + Coming soon
 - Myth carousels (backend/carousel_myths.py): safe-sorry-myth-young-1..6.jpg + zip, safe-sorry-myth-state-1..6.jpg + zip (2026/27 SSP/ESA/BSP figures), listed on /api/reels
+
+## Update (Oct 2026) — Adviser desk (browser lead access)
+- /api/desk: backend-served desktop page (works after Publish). Login (advisers only, 30-min token renewed while active, auto logout after 30 min idle, sessionStorage only), lead list, full lead detail (contact, message, unverified notice, needs/has/gap, existing cover), Download for CRM.
+- New-lead email now has a "View lead" button → /api/desk#lead=<id> (login first, then straight to the lead).
+- Status changes and data-deletion requests stay in the app. Iteration 17: PASS.

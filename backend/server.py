@@ -33,6 +33,7 @@ from invite import invite_page  # noqa: E402
 from presentation import build_presentation  # noqa: E402
 from logo_concepts import concept_sheet  # noqa: E402
 from try_page import try_page  # noqa: E402
+from desk import desk_page  # noqa: E402
 from reels import router as reels_router  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from privacy import PRIVACY_VERSION, privacy_sections  # noqa: E402
@@ -232,9 +233,12 @@ LEADS_PER_DAY = 3                              # call-back requests per account
 DUMMY_HASH = bcrypt.hashpw(b"timing-equaliser", bcrypt.gensalt()).decode()
 
 
-def make_token(user_id: str, pwdv: int = 0) -> str:
+DESK_SESSION = timedelta(minutes=30)             # browser adviser desk: short-lived, renewed while active
+
+
+def make_token(user_id: str, pwdv: int = 0, ttl: timedelta = timedelta(days=7)) -> str:
     now = datetime.now(timezone.utc)
-    return jwt.encode({"sub": user_id, "iat": now, "exp": now + timedelta(days=7), "pwdv": pwdv}, JWT_SECRET, algorithm="HS256")
+    return jwt.encode({"sub": user_id, "iat": now, "exp": now + ttl, "pwdv": pwdv}, JWT_SECRET, algorithm="HS256")
 
 
 def public_user(u: User) -> dict:
@@ -735,7 +739,7 @@ def email_header(request: Request) -> str:
             'style="display:block;width:120px;height:auto;border:0"></td></tr>')
 
 
-def lead_email_html(lead: Lead, summary: Optional[dict], firm_name: str, header: str = "") -> str:
+def lead_email_html(lead: Lead, summary: Optional[dict], firm_name: str, header: str = "", desk_url: str = "") -> str:
     rows = [("Name", lead.name), ("Email", lead.email), ("Phone", lead.phone),
             ("Best time", lead.preferred_time or "Any"), ("Message", lead.message or "-")]
     if summary:
@@ -756,6 +760,9 @@ def lead_email_html(lead: Lead, summary: Optional[dict], firm_name: str, header:
         '<h2 style="color:#223342;margin:0 0 12px">New adviser request</h2>'
         f'<p style="color:#3A3835">A {escape(APP_NAME)} user would like to talk about protecting their family.</p>'
         f'<table role="presentation" style="border-collapse:collapse">{trs}</table>'
+        + (f'<p style="margin:24px 0 0"><a href="{escape(desk_url)}" style="display:inline-block;background:#BF9B30;color:#ffffff;'
+           'padding:12px 22px;border-radius:10px;font-weight:bold;text-decoration:none">View lead</a></p>'
+           '<p style="font-size:12px;color:#888;margin:8px 0 0">You\'ll be asked to log in first.</p>' if desk_url else '') +
         f'<p style="font-size:12px;color:#888;margin-top:24px">Sent by {escape(APP_NAME)} for {escape(firm_name)}.</p>'
         '</td></tr></table>'
     )
@@ -781,7 +788,8 @@ async def create_lead(body: LeadIn, request: Request, user: User = Depends(curre
     lead.id = str(res.inserted_id)
     try:
         await send_email(to=adviser.lead_email or adviser.email, subject=f"New {APP_NAME} adviser request: {lead.name}",
-                         html=lead_email_html(lead, summary, firm.name if firm else APP_NAME, email_header(request)), reply_to=user.email)
+                         html=lead_email_html(lead, summary, firm.name if firm else APP_NAME, email_header(request),
+                                              f"{public_base(request)}/api/desk#lead={lead.id}"), reply_to=user.email)
         await db.leads.update_one({"_id": ObjectId(lead.id)}, {"$set": {"email_sent": True}})
         lead.email_sent = True
     except Exception as e:
@@ -813,6 +821,30 @@ async def adviser_user(user: User = Depends(current_user)) -> User:
     if user.role != "adviser":
         raise HTTPException(403, "Adviser access only")
     return user
+
+
+@api.get("/desk", response_class=HTMLResponse)
+async def adviser_desk():
+    return HTMLResponse(desk_page(app_name=APP_NAME), headers={
+        "Cache-Control": "no-store", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
+        "X-Content-Type-Options": "nosniff"})
+
+
+@api.post("/desk/login")
+async def desk_login(body: LoginIn, request: Request):
+    """Same checks as app login (rate limits, timing), but advisers only and a 30-minute session."""
+    res = await login(body, request)
+    if res["user"]["role"] != "adviser":
+        raise HTTPException(403, "The adviser desk is for advisers only. Clients can use the app.")
+    if res["user"]["must_change_password"]:
+        raise HTTPException(403, "Please set a new password in the app first, then log in here.")
+    doc = await db.users.find_one({"_id": ObjectId(res["user"]["id"])})
+    return {"token": make_token(res["user"]["id"], doc.get("password_version", 0), DESK_SESSION), "user": res["user"]}
+
+
+@api.post("/desk/refresh")
+async def desk_refresh(me: User = Depends(adviser_user)):
+    return {"token": make_token(me.id, me.password_version, DESK_SESSION)}
 
 
 def lead_out(d: dict) -> dict:
