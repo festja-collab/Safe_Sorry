@@ -56,12 +56,17 @@ async def reels_page():
         cards += f"""<div class="card"><h2>{escape(titles.get(v[:-4], v))}</h2><video src="/api/reels/file/{escape(v)}" controls playsinline preload="metadata"{poster}></video>
 <a class="btn" href="/api/reels/file/{escape(v)}?download=1" download>⬇ Download video</a>
 {f'<a class="btn ghost" href="/api/reels/file/{escape(cover)}?download=1" download>⬇ Download cover image</a>' if poster else ''}</div>"""
-    slides = sorted(REELS.glob("safe-sorry-carousel-*.jpg"), key=lambda p: int(p.stem.rsplit("-", 1)[1]))
-    if slides:
+    carousels = [("safe-sorry-myth-young", "Myth-buster carousel · “I’m young and healthy, I don’t need it”"),
+                 ("safe-sorry-myth-state", "Myth-buster carousel · “The state will look after us”"),
+                 ("safe-sorry-carousel", "Launch carousel (6 slides) · post before launch")]
+    for prefix, title in carousels:
+        slides = sorted(REELS.glob(f"{prefix}-[0-9].jpg"), key=lambda p: int(p.stem.rsplit("-", 1)[1]))
+        if not slides:
+            continue
         imgs = "".join(f'<a href="/api/reels/file/{p.name}?download=1" download><img src="/api/reels/file/{p.name}" alt="Slide {i}"></a>'
                        for i, p in enumerate(slides, 1))
-        cards += f"""<div class="card"><h2>Launch carousel (6 slides) · post before launch</h2><div class="grid">{imgs}</div>
-<a class="btn" href="/api/reels/file/safe-sorry-carousel.zip?download=1" download>⬇ Download all 6 slides (zip)</a>
+        cards += f"""<div class="card"><h2>{escape(title)}</h2><div class="grid">{imgs}</div>
+<a class="btn" href="/api/reels/file/{prefix}.zip?download=1" download>⬇ Download all {len(slides)} slides (zip)</a>
 <p class="tip">On iPhone it's easiest to tap each slide, then press and hold → Save to Photos (zip files open in the Files app).</p></div>"""
     return f"""<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Safe &gt; Sorry reels</title><style>
