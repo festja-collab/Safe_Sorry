@@ -44,8 +44,8 @@ async def reel_file(name: str, request: Request, download: int = 0):
 
 @router.get("/reels", response_class=HTMLResponse)
 async def reels_page():
-    order = ["safe-sorry-launch-reel", "safe-sorry-coming-soon", "safe-sorry-award-reel", "safe-sorry-story-coming-soon", "safe-sorry-story-launch"]
-    titles = {"safe-sorry-launch-reel": "Launch reel (27s) · for launch day", "safe-sorry-coming-soon": "Coming soon reel (27s) · post before launch",
+    order = ["safe-sorry-insure-reel", "safe-sorry-launch-reel", "safe-sorry-coming-soon", "safe-sorry-award-reel", "safe-sorry-story-coming-soon", "safe-sorry-story-launch"]
+    titles = {"safe-sorry-insure-reel": "What do we insure? reel (25s) · awareness, post before launch", "safe-sorry-launch-reel": "Launch reel (27s) · for launch day", "safe-sorry-coming-soon": "Coming soon reel (27s) · post before launch",
               "safe-sorry-award-reel": "Award reel (21s) · builds trust", "safe-sorry-story-coming-soon": "Story (15s) · coming soon, link in bio",
               "safe-sorry-story-launch": "Story (15s) · launch day, link in bio"}
     vids = sorted((p.name for p in REELS.glob("*.mp4")), key=lambda n: order.index(n[:-4]) if n[:-4] in order else 99)
