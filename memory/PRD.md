@@ -119,3 +119,9 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - /api/desk: backend-served desktop page (works after Publish). Login (advisers only, 30-min token renewed while active, auto logout after 30 min idle, sessionStorage only), lead list, full lead detail (contact, message, unverified notice, needs/has/gap, existing cover), Download for CRM.
 - New-lead email now has a "View lead" button → /api/desk#lead=<id> (login first, then straight to the lead).
 - Status changes and data-deletion requests stay in the app. Iteration 17: PASS.
+
+## Update (Oct 2026) — Music, myth reels, posting plan
+- Licensed Pixabay music mixed into launch/coming-soon/insure/DIS-myth/award reels (silent originals in static/reels/_silent/).
+- New reels: safe-sorry-myth-young-reel, safe-sorry-myth-state-reel (reel_myths2.py, ambient track), listed on /api/reels.
+- /api/posting-plan: 4-week Instagram plan (captions, hashtags, disclosure, bio, Rosemount sign-off boxes) — posting_plan.py.
+- Tests protect Mark's real account (tests/conftest.py snapshot/restore). Desk tests use desk.adviser@example.com.

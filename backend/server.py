@@ -34,6 +34,7 @@ from presentation import build_presentation  # noqa: E402
 from logo_concepts import concept_sheet  # noqa: E402
 from try_page import try_page  # noqa: E402
 from desk import desk_page  # noqa: E402
+from posting_plan import posting_plan  # noqa: E402
 from reels import router as reels_router  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from privacy import PRIVACY_VERSION, privacy_sections  # noqa: E402
@@ -821,6 +822,11 @@ async def adviser_user(user: User = Depends(current_user)) -> User:
     if user.role != "adviser":
         raise HTTPException(403, "Adviser access only")
     return user
+
+
+@api.get("/posting-plan", response_class=HTMLResponse)
+async def posting_plan_page():
+    return posting_plan()
 
 
 @api.get("/desk", response_class=HTMLResponse)
