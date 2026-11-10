@@ -36,6 +36,7 @@ from try_page import try_page  # noqa: E402
 from desk import desk_page  # noqa: E402
 from posting_plan import posting_plan  # noqa: E402
 from regulatory import regulatory_status  # noqa: E402
+from reminders import reminder_html, reminder_loop  # noqa: E402
 from reels import router as reels_router  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from privacy import PRIVACY_VERSION, privacy_sections  # noqa: E402
@@ -99,6 +100,7 @@ class User(BaseDocument):
     adviser_code: Optional[str] = None
     password_version: int = 0
     must_change_password: bool = False
+    reminders_opt_out: bool = False
     # Attribution (clients)
     signup_code: str = ""      # full code entered, e.g. MARK-SFL-FB
     signup_source: str = ""    # suffix, e.g. FB / INV
@@ -190,6 +192,7 @@ class Assessment(BaseDocument):
     results: dict
     story: Optional[dict] = None
     created_at: str
+    origin: str = ""          # site address the check was done on, used for the reminder email link
 
 
 class LeadIn(BaseModel):
@@ -514,11 +517,11 @@ def assessment_out(a: Assessment) -> dict:
 
 
 @api.post("/assessments")
-async def create_assessment(body: AssessmentIn, user: User = Depends(current_user)):
+async def create_assessment(body: AssessmentIn, request: Request, user: User = Depends(current_user)):
     await limiter.take(db.rate_limits, namespace="assess-user", key=user.id, limit=ASSESSMENTS_PER_DAY, window=DAY,
                        message=f"You've reached today's limit of {ASSESSMENTS_PER_DAY} family checks. Please come back tomorrow.")
     inputs = body.model_dump()
-    a = Assessment(user_id=user.id, inputs=inputs, results=compute(inputs), created_at=now_iso())
+    a = Assessment(user_id=user.id, inputs=inputs, results=compute(inputs), created_at=now_iso(), origin=public_base(request))
     res = await db.assessments.insert_one(a.to_mongo())
     a.id = str(res.inserted_id)
     return assessment_out(a)
@@ -824,6 +827,45 @@ async def adviser_user(user: User = Depends(current_user)) -> User:
     if user.role != "adviser":
         raise HTTPException(403, "Adviser access only")
     return user
+
+
+UNSUB_KEY = JWT_SECRET + ":reminder-unsubscribe"   # separate key: these links can never be used to log in
+
+
+def unsub_url(base: str, user_id: str) -> str:
+    t = jwt.encode({"sub": user_id, "purpose": "unsub"}, UNSUB_KEY, algorithm="HS256")
+    return f"{base}/api/reminders/unsubscribe?t={t}"
+
+
+async def _send_reminder(to: str, subject: str, html: str):
+    if not await send_email(to=to, subject=subject, html=html):
+        raise RuntimeError("email not accepted")
+
+
+async def _build_reminder(user: dict, a: dict) -> tuple[str, str]:
+    firm = await get_firm(user.get("firm_id"))
+    reg = regulatory_status({**firm.model_dump(), "firm_name": firm.name}) if firm else ""
+    first = (user.get("name") or "there").split(" ")[0]
+    return ("A gentle nudge about your family check",
+            reminder_html(app_name=APP_NAME, first_name=first, base=a["origin"], report_id=str(a["_id"]),
+                          unsub_url=unsub_url(a["origin"], str(user["_id"])), reg=reg))
+
+
+@api.get("/reminders/unsubscribe", response_class=HTMLResponse)
+async def reminders_unsubscribe(t: str):
+    try:
+        p = jwt.decode(t, UNSUB_KEY, algorithms=["HS256"])
+        assert p.get("purpose") == "unsub"
+        uid = ObjectId(p["sub"])
+    except Exception:
+        raise HTTPException(400, "This link isn't valid.")
+    await db.users.update_one({"_id": uid}, {"$set": {"reminders_opt_out": True}})
+    return HTMLResponse(
+        '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        f'<title>{escape(APP_NAME)}</title></head><body style="margin:0;font-family:Arial,sans-serif;background:#223342;color:#fff;text-align:center">'
+        '<div style="max-width:420px;margin:0 auto;padding:48px 20px"><img src="/api/static/logos/logo_dark_transparent.png" alt="" style="width:160px">'
+        '<h1 style="font-family:Georgia,serif" id="unsub-done">You won’t get any more reminders</h1>'
+        '<p style="color:#E9ECF0;line-height:1.6">Your report is still there whenever you want it.</p></div></body></html>')
 
 
 @api.get("/posting-plan", response_class=HTMLResponse)
@@ -1231,6 +1273,7 @@ async def startup():
     await db.password_resets.create_index("expires_at", expireAfterSeconds=0)
     await db.password_resets.create_index("user_id")
     await seed_default_adviser()
+    asyncio.create_task(reminder_loop(db, send=_send_reminder, build=_build_reminder))
     try:
         await run_in_threadpool(storage.init_storage)
     except Exception as e:

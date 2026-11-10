@@ -137,3 +137,4 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Pinned "About Safe > Sorry" 3-slide post (about_post.py → safe-sorry-about-1..3.jpg + zip), listed on /api/reels.
 - /api/desk lead detail: "Mark as New / Contacted / Closed" buttons (PATCH /api/adviser/leads/{id}).
 - Report: dismissible 'Keep your report close' home-screen tip (mobile web only, iOS Safari steps / Android install prompt), src/components/home-screen-tip.tsx.
+- Report reminder: one automatic email ~30 days after a check (reminders.py loop, hourly), link back to report, unsubscribe link (separate signing key), privacy notice updated (version not bumped). Only checks created from now (have 'origin').
