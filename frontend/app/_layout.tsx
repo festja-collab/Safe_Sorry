@@ -3,7 +3,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import Head from "expo-router/head";
 import { StatusBar } from "expo-status-bar";
-import { LogBox } from "react-native";
+import { LogBox, Platform, StyleSheet, View } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { AuthProvider } from "@/src/auth";
@@ -41,12 +41,30 @@ export default function RootLayout() {
         <KeyboardProvider>
           <AuthProvider>
             <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.surface } }}>
-              <Stack.Screen name="assessment" options={{ presentation: "fullScreenModal", gestureEnabled: false }} />
-            </Stack>
+            <View style={styles.page}>
+              <View style={styles.column}>
+                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.surface } }}>
+                  <Stack.Screen name="assessment" options={{ presentation: "fullScreenModal", gestureEnabled: false }} />
+                </Stack>
+              </View>
+            </View>
           </AuthProvider>
         </KeyboardProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
 }
+
+// On laptops/desktops (web), keep the phone design in a centred column on a navy page so text and
+// buttons stay a comfortable size. Phones and narrow windows are unchanged (the column is full width).
+const styles = StyleSheet.create({
+  page: { flex: 1, backgroundColor: colors.brand, alignItems: "center" },
+  column: {
+    flex: 1,
+    width: "100%",
+    maxWidth: Platform.OS === "web" ? 640 : undefined,
+    overflow: "hidden",
+    backgroundColor: colors.surface,
+    ...(Platform.OS === "web" ? { boxShadow: "0 0 40px rgba(0,0,0,0.25)" } : {}),
+  },
+});

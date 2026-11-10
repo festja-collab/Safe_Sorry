@@ -141,3 +141,4 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Reels slowed: scripts_make_reel.SLOW=1.6 (scene holds 1.6x, animation speed unchanged). Reels now 43s/40s/34s, stories 24s. Launch music crossfaded x2 (music/launch-long.mp3).
 - Fix: conftest guard now safe for parallel pytest workers (db.test_guard counter; last session restores Mark's real account; stale guard >2h auto-restored).
 - Fix: emailer skips test domains (example.com/.org/.net, safesorry-test.co.uk, .test/.invalid) so tests never use up the real email allowance (provider had returned 429). CALENDLY_URL now https://calendly.com/mark-turner-slfw/30min (old one 404'd); Mark's profile updated.
+- Desktop web: root _layout wraps Stack in a centred 640px column on a navy page (web only); phones unchanged.
