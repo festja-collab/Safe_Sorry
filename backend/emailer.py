@@ -89,8 +89,16 @@ def _assert_safe_email(subject: str, html: str) -> None:
                 raise ValueError(f"Anchor text {m.group(1)!r} ≠ real link host {real!r} (G3)")
 
 
+TEST_DOMAINS = ("example.com", "example.org", "example.net", "safesorry-test.co.uk")
+
+
 async def send_email(*, to: str, subject: str, html: str, reply_to: str | None = None) -> str | None:
     _assert_safe_email(subject, html)
+    domain = to.rsplit("@", 1)[-1].lower()
+    if domain in TEST_DOMAINS or domain.endswith((".test", ".invalid", ".example")):
+        # Dummy/test accounts: never use up the real email allowance
+        logger.info(f"Email skipped for test address @{domain}: {subject}")
+        return "skipped-test-address"
     payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
     if reply_to or EMAIL_REPLY_TO:
         payload["contact_email"] = reply_to or EMAIL_REPLY_TO

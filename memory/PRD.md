@@ -140,3 +140,4 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Report reminder: one automatic email ~30 days after a check (reminders.py loop, hourly), link back to report, unsubscribe link (separate signing key), privacy notice updated (version not bumped). Only checks created from now (have 'origin').
 - Reels slowed: scripts_make_reel.SLOW=1.6 (scene holds 1.6x, animation speed unchanged). Reels now 43s/40s/34s, stories 24s. Launch music crossfaded x2 (music/launch-long.mp3).
 - Fix: conftest guard now safe for parallel pytest workers (db.test_guard counter; last session restores Mark's real account; stale guard >2h auto-restored).
+- Fix: emailer skips test domains (example.com/.org/.net, safesorry-test.co.uk, .test/.invalid) so tests never use up the real email allowance (provider had returned 429). CALENDLY_URL now https://calendly.com/mark-turner-slfw/30min (old one 404'd); Mark's profile updated.
