@@ -1,4 +1,5 @@
 """Privacy notice text (draft for compliance review). Version bumps require re-acceptance."""
+from regulatory import regulatory_status
 
 PRIVACY_VERSION = "2026-10-draft-2"
 
@@ -9,11 +10,7 @@ NOT_ADVICE = ("Please note this is not regulated advice. This Application will o
 
 def privacy_sections(*, app_name: str, firm: dict, contact_email: str) -> list[dict]:
     fn = firm.get("firm_name") or "your adviser's firm"
-    status = f"{fn} (FRN {firm.get('fca_number', '')})"
-    if firm.get("principal_name"):
-        status += f" is an Appointed Representative of {firm['principal_name']}, which is authorised and regulated by the Financial Conduct Authority (FRN {firm.get('principal_fca_number', '')})."
-    else:
-        status += " is authorised and regulated by the Financial Conduct Authority."
+    status = regulatory_status(firm)
     return [
         {"heading": "Who we are", "body": f"{app_name} is provided by {fn}. {fn} is the data controller for the personal information you give us in this app. Questions? Email {contact_email}. Regulatory status: {status}"},
         {"heading": "What we collect", "body": "Your name, email address and password (stored only in scrambled form). The answers you give in a family check: your age, your partner's and children's first names and ages, income, spending, mortgage or rent, savings, debts and existing cover. If you ask for a call: your phone number, best time to call and any message. We also keep basic technical records (such as your internet connection address) for up to 24 hours to protect the app from misuse."},

@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 18: tested the mobile-first website and the 'trading style of SFL' wording. One CRITICAL bug found and fixed: adviser_profile() passed Firm.model_dump() (key 'name') to regulatory_status(), which reads 'firm_name'. Because of that, regulatory_status was always an empty string, so the trading-style wording was MISSING from /api/start, /api/start/{code}, /api/invite/{code}, /api/presentation, /api/compliance-pack and the app Adviser tab. /api/privacy and /api/posting-plan were unaffected. After the one-line fix, the new suite tests/test_web_trading_style.py passes 14/14. Mobile web at 390x844: tapping start-check on /api/start/MARK-SFL?src=IG opens /auth?mode=register&code=MARK-SFL-IG with the code filled in. Register (new email, 10+ char password, privacy ticked) goes to /assessment. All 12 assessment steps complete and the report loads with the AI story. No horizontal overflow (scrollWidth 390, no off-screen elements). adviser-firm-info matches the exact wording, and so does the privacy screen. Desk login regression passes. Only failure: the page title is 'Safe > Sorry', not 'Safe > Sorry · Free family protection check'. app.json has web.output 'single', so +html.tsx is never used.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/start, /api/start/{code}, /api/invite/{code}, /api/presentation, /api/compliance-pack, /api/auth/me|adviser profile (adviser tab)", "issue": "FIXED by testing agent: regulatory_status empty. server.py:353 regulatory_status(f.model_dump()) -> Firm has 'name' not 'firm_name' so function returned ''. Changed to regulatory_status({**f.model_dump(), 'firm_name': f.name}).", "priority": "CRITICAL"}
+    ],
+    "minor": [
+      {"endpoint": "GET /api/reels", "issue": "Reel titles still say 'Coming soon reel (27s) · post before launch' and 'Story (15s) · coming soon, link in bio'. Filenames are also still safe-sorry-coming-soon.mp4 and safe-sorry-story-coming-soon.mp4, and they appear on the posting plan (asset links). Not customer-facing, but out of line with the 'no Coming soon' change. Reference: /app/backend/reels.py:47-52"},
+      {"endpoint": "tests (stale)", "issue": "These older tests are out of date: test_reels.py TestRange hardcodes the old MP4 size 1813264 (re-rendered file is 2360813); test_iteration6 TestStoreLinkGating still expects 'Coming soon'. The full suite also flakes under xdist because tests share rate limits."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Web document <title>", "issue": "document.title is 'Safe > Sorry' on every route (/, /auth, /report, adviser tab), not 'Safe > Sorry · Free family protection check'. app/+html.tsx is ignored because app.json expo.web.output = 'single' (+html.tsx only applies to static/server output). The served index.html is Expo's default template, so the og:title, description, theme-color and viewport-fit meta tags are missing too. Fix: add /app/frontend/public/index.html with these head tags (SPA mode uses it), or set the title at runtime with expo-router/head <Head><title>…</title></Head> in app/_layout.tsx. Do not change app.json, it is protected.", "testID": "n/a", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_web_trading_style.py", "/app/test_reports/pytest/iteration18_web.xml"],
+  "action_items": [
+    "Fix the web <title> and meta tags: create frontend/public/index.html (SPA template) with <title>Safe &gt; Sorry · Free family protection check</title> plus the og/description/theme-color tags, or use expo-router/head in app/_layout.tsx. +html.tsx has no effect with web.output='single'.",
+    "Review the fix applied at server.py:353 (regulatory_status now receives firm_name). Consider making regulatory_status accept a Firm, or renaming keys, so the mismatch can't happen again.",
+    "(Minor) Rename the 'Coming soon' reel titles in reels.py, and optionally the files safe-sorry-coming-soon*.mp4 (update the posting_plan asset names if you do).",
+    "(Minor) Update stale tests: test_reels.py hardcoded size, and test_iteration6 TestStoreLinkGating 'coming soon' expectations."
+  ],
+  "critical_code_review_comments": [
+    "regulatory_status(p) uses dict keys that don't match the Firm model ('firm_name' vs 'name'). This caused a silent empty-string failure. A test now covers the exact wording on every page.",
+    "server.py is 1242 lines (>700). Consider splitting routes into modules."
+  ],
+  "updated_files": ["/app/backend/server.py (line 353 regulatory_status key fix)", "/app/backend/tests/test_web_trading_style.py (new)"],
+  "success_rate": {"backend": "100% (14/14) after fix; 5/14 before fix", "frontend": "~90% (all flows pass; page title wrong)"},
+  "seed_data_creation": "Created and then deleted (via /api/auth/delete-account, ref DEL-10430107) client test_web1794310356279@example.com and its 1 assessment. No seeded data was modified.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: EXPO_PUBLIC_BACKEND_URL=https://protect-me-17.preview.emergentagent.com pytest tests/test_web_trading_style.py. The frontend .env uses EXPO_PUBLIC_BACKEND_URL. To see the default adviser's (MARK-SFL) wording on the Adviser tab you need a client linked to MARK-SFL, so register a TEST user through /api/start. desk.client is linked to Desk Test Firm. Assessment flow is 12 steps; report URL /report/{id}.",
+  "rca_of_issue": "Missing wording: adviser_profile built regulatory_status from Firm.model_dump(), whose company-name key is 'name', but regulatory_status() returns '' when 'firm_name' is missing. privacy_sections passed the adviser_profile dict (which has firm_name), so only privacy worked. Title: Expo uses +html.tsx only for static/server web output. With output 'single' the default index.html template (title = app name) is served."
+}

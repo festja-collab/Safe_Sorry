@@ -26,13 +26,13 @@ class TestInviteLanding:
         # Adviser name
         assert "Mark Turner" in html
         # FCA regulatory line (firm + principal)
-        assert "SFL Wealth Management Ltd" in html
+        assert "Secure for Life Wealth Management Ltd" in html
         assert "FRN 912517" in html
         assert "Appointed Representative" in html
         assert "Rosemount Financial Solutions (IFA) Limited" in html
         assert "FRN 535515" in html
         # Store links empty in env -> coming soon copy
-        assert "Coming soon to the App Store and Google Play." in html
+        assert "Start your free check" in html and "App Store" not in html
 
     def test_unknown_code_returns_404(self, http):
         r = http.get(f"{BASE_URL}/api/invite/NOPE-XXX", params={"name": "Sarah"})

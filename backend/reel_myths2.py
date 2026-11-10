@@ -41,7 +41,7 @@ REELS = {
         (13.0, 17.6, fact(3, "If others rely on you, it matters now.",
                           "A partner, children, or a mortgage in your name all depend on your income.", "pound")),
         (17.6, 21.8, balance("Not everyone needs cover.", "But it’s worth knowing if you do.", "It takes 5 minutes to check.")),
-        (21.8, 27.0, make_end("Know where you stand in 5 minutes.", "Coming soon", "Follow to be first to try it")),
+        (21.8, 27.0, make_end("Know where you stand in 5 minutes.")),
     ],
     "safe-sorry-myth-state-reel": [
         (0, 4.0, myth("“If something happened,", "the state would look after us.”")),
@@ -52,7 +52,7 @@ REELS = {
         (13.0, 17.6, noted(fact(3, "Bereavement Support Payment is capped.",
                                 "Up to £3,500 plus £350 a month for 18 months.* Then it stops.", "pound"))),
         (17.6, 21.8, balance("State support helps.", "But it’s rarely enough", "to keep a family’s plans on track.")),
-        (21.8, 27.0, make_end("See what the state would really pay you.", "Coming soon", "Follow to be first to try it")),
+        (21.8, 27.0, make_end("See what the state would really pay you.")),
     ],
 }
 

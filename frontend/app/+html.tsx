@@ -10,8 +10,15 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
         />
+        <title>Safe &gt; Sorry · Free family protection check</title>
+        <meta name="description" content="A free 5-minute check that shows what your family would face if the worst happened. Estimates only, not regulated advice." />
+        <meta name="theme-color" content="#223342" />
+        <meta property="og:title" content="Safe > Sorry · Would your family be okay?" />
+        <meta property="og:description" content="A free 5-minute family protection check. Nothing to download." />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Safe > Sorry" />
         {/*
           Disable body scrolling on web to make ScrollView components work correctly.
           If you want to enable scrolling, remove `ScrollViewStyleReset` and

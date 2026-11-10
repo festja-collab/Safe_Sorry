@@ -80,6 +80,8 @@ export type AdviserProfile = {
   fca_number: string;
   principal_name: string;
   principal_fca_number: string;
+  trading_name: string;
+  regulatory_status: string;
   firm_id: string | null;
   brand_color: string;
   logo_url: string;

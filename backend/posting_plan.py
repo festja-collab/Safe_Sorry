@@ -1,17 +1,18 @@
 """4-week Instagram posting plan for Rosemount review. Browser page at /api/posting-plan (print/save as PDF)."""
 from html import escape
 
-AR = ("Secure for Life Wealth Management Ltd is an Appointed Representative of Rosemount Financial Solutions (IFA) "
-      "Limited, which is authorised and regulated by the Financial Conduct Authority.")
+from regulatory import SFL_STATUS
+
+AR = SFL_STATUS
 FOOTER = f"Estimates only, not regulated advice. Figures are illustrative. {AR}"
 TAGS_CORE = "#lifeinsurance #incomeprotection #criticalillnesscover #protectionadvice #familyfinances #personalfinanceuk"
 
 # (week, day, format, asset title, asset file, caption, extra hashtags)
 POSTS = [
-    (1, "Mon", "Reel", "Coming soon reel (27s)", "safe-sorry-coming-soon.mp4",
+    (1, "Mon", "Reel", "Intro reel (27s)", "safe-sorry-coming-soon.mp4",
      "Most of us know what our phone is insured for. Far fewer know what would happen to our family's money if we "
      "couldn't work, or weren't here.\n\nSafe > Sorry is a free family check that shows you, in plain English, in about "
-     "5 minutes. Coming soon. Follow to be first to try it.", "#comingsoon #newapp #familyfirst"),
+     "5 minutes. Nothing to download. Link in bio.", "#freecheck #familyfirst #moneytips"),
     (1, "Wed", "Reel", "What do we insure? (25s)", "safe-sorry-insure-reel.mp4",
      "Phone. Car. Holiday. Even the dog.\n\nWe insure the things we'd hate to lose. So what about the income your "
      "family relies on? Worth a thought this week.", "#insurance #moneytips #financialwellbeing"),
@@ -21,9 +22,9 @@ POSTS = [
     (2, "Mon", "Reel", "Myth: death in service (27s)", "safe-sorry-myth-reel.mp4",
      "\"I've got death in service at work, so I'm covered.\"\n\nIt's a great start. But it usually stops when you leave "
      "your job, and it only pays out if you die. Do you know what yours would actually pay?", "#deathinservice #employeebenefits #mythbusting"),
-    (2, "Wed", "Carousel (6)", "Launch carousel · what the app does", "safe-sorry-carousel.zip",
+    (2, "Wed", "Carousel (6)", "Carousel · what the free check does", "safe-sorry-carousel.zip",
      "What does Safe > Sorry actually do? Swipe through.\n\nAnswer a few questions about your family, and see your "
-     "family's safety net in pounds and months, not jargon. Free, and coming soon.", "#comingsoon #newapp #moneytips"),
+     "family's safety net in pounds and months, not jargon. Free, in your browser. Link in bio.", "#freecheck #moneytips"),
     (2, "Fri", "Carousel (6)", "Myth: “The state will look after us”", "safe-sorry-myth-state.zip",
      "Myth: \"If something happened, the state would look after us.\"\n\nState support helps, but the amounts can be a "
      "surprise. Swipe for the 2026/27 figures. Eligibility rules apply.", "#statebenefits #sickpay #mythbusting"),
@@ -33,13 +34,13 @@ POSTS = [
     (3, "Wed", "Reel", "Myth: “The state will look after us” (27s)", "safe-sorry-myth-state-reel.mp4",
      "Statutory Sick Pay is £123.25 a week in 2026/27. Could your household run on that?\n\nKnowing the numbers is the "
      "first step. Eligibility rules apply.", "#statebenefits #sickpay #financialwellbeing"),
-    (3, "Fri", "Story (15s)", "Story · coming soon, link in bio", "safe-sorry-story-coming-soon.mp4",
-     "(Story, no caption needed.) Add a countdown sticker to launch day and the link sticker to the landing page.", ""),
-    (4, "Mon", "Reel", "Launch reel (27s) · LAUNCH DAY", "safe-sorry-launch-reel.mp4",
-     "It's here. Safe > Sorry is live.\n\nA free family check that shows what would happen to your family's money if "
-     "you couldn't work, or weren't here, and what you could do about it. Link in bio.", "#launchday #newapp #familyfirst"),
-    (4, "Tue", "Story (15s)", "Story · launch day, link in bio", "safe-sorry-story-launch.mp4",
-     "(Story, no caption needed.) Add the link sticker. Reshare the launch reel to Stories the same day.", ""),
+    (3, "Fri", "Story (15s)", "Story · free check, link in bio", "safe-sorry-story-coming-soon.mp4",
+     "(Story, no caption needed.) Add the link sticker to the landing page.", ""),
+    (4, "Mon", "Reel", "Main reel (27s)", "safe-sorry-launch-reel.mp4",
+     "How long would your family's money last if you couldn't work, or weren't here?\n\nSafe > Sorry is a free family "
+     "check that shows you, and what you could do about it. Nothing to download. Link in bio.", "#freecheck #familyfirst"),
+    (4, "Tue", "Story (15s)", "Story · start your free check", "safe-sorry-story-launch.mp4",
+     "(Story, no caption needed.) Add the link sticker. Reshare Monday's reel to Stories the same day.", ""),
     (4, "Fri", "Reel", "Award reel (21s)", "safe-sorry-award-reel.mp4",
      "Built by Mark Turner, Protection Adviser of the Year 2026 at the Next Intelligence awards.\n\nThe aim is simple: "
      "help families see their safety net clearly, then talk it through with a real person if they'd like to.",
@@ -53,8 +54,8 @@ STORIES = [
     "Reshare each feed post to your Story on the day it goes out.",
 ]
 
-BIO = ("Safe > Sorry · Better Safe Than Sorry\nFree 5-minute family protection check\nEstimates only, not advice\n"
-       "From Protection Adviser of the Year 2026 ↓")
+BIO = ("Better Safe Than Sorry 🛡️\nFree 5-min family protection check\nEstimates only, not advice\n"
+       "By Protection Adviser of the Year 2026 ↓")
 
 
 def posting_plan() -> str:
@@ -63,8 +64,8 @@ def posting_plan() -> str:
     for w, day, fmt, title, asset, caption, tags in POSTS:
         if w != week:
             week = w
-            label = {1: "Week 1 · build awareness", 2: "Week 2 · myths & what's coming", 3: "Week 3 · countdown",
-                     4: "Week 4 · launch"}[w]
+            label = {1: "Week 1 · build awareness", 2: "Week 2 · myths & how it works", 3: "Week 3 · myth-busting",
+                     4: "Week 4 · the free check"}[w]
             rows += f'<tr class="wk"><td colspan="4">{label}</td></tr>'
         full = caption + (f"\n\n{FOOTER}\n\n{TAGS_CORE} {tags}" if tags else "")
         rows += (f'<tr><td><b>{e(day)}</b><br><span class="m">{e(fmt)}</span></td>'
@@ -82,9 +83,8 @@ tr.wk td{{background:#223342;color:#BF9B30;font-weight:bold;font-size:15px}} pre
 </style></head><body><div class="wrap">
 <h1>Safe &gt; Sorry · 4-week Instagram plan</h1>
 <p class="note"><b>Draft for Rosemount compliance review.</b> Nothing is to be posted until each item below is approved. Each post carries
-the not-advice wording and the appointed representative statement. All figures are 2026/27 and illustrative. Weeks 1–3 assume the app
-is not yet in the app stores (reels in those weeks end with “Coming soon”). Week 4 is launch week; move it to match the real launch date.
-Reels ending “Coming soon” should not be posted after launch.</p>
+the not-advice wording and the trading-style statement. All figures are 2026/27 and illustrative. Safe &gt; Sorry is a mobile-first
+website, so every post points to “Start your free check · link in bio” (nothing to download) and posts can be reused at any time.</p>
 <div class="box"><b>Posting rhythm:</b> 3 feed posts a week (Mon / Wed / Fri, early evening 7–9pm works well for parents) plus 2–3 Stories.
 Use Instagram’s commercial music library on Stories and carousels. Main reels already include licensed music.</div>
 <h2>Profile bio (draft)</h2><div class="box"><pre>{e(BIO)}</pre><p class="m">Link in bio: the Safe &gt; Sorry landing page with tracking code MARK-SFL-IG.

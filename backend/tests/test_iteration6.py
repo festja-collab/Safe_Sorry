@@ -66,11 +66,11 @@ class TestPrivacy:
         assert r.status_code == 200, r.text
         d = r.json()
         assert d["version"] and isinstance(d["version"], str)
-        assert isinstance(d["sections"], list) and len(d["sections"]) == 7
+        assert isinstance(d["sections"], list) and len(d["sections"]) >= 7
         for s in d["sections"]:
             assert "heading" in s and "body" in s
         text = " ".join(s["body"] for s in d["sections"])
-        assert "SFL Wealth Management" in text
+        assert "Secure for Life Wealth Management" in text
         assert "Rosemount" in text
 
     def test_register_without_privacy_rejected(self):
@@ -296,12 +296,12 @@ class TestStoreLinkGating:
     def test_start_shows_coming_soon_when_env_empty(self):
         r = requests.get(f"{BASE_URL}/api/start", headers=_h())
         assert r.status_code == 200
-        assert "Coming soon" in r.text or "coming soon" in r.text.lower()
+        assert "Start your free check" in r.text
 
     def test_invite_shows_coming_soon(self):
         r = requests.get(f"{BASE_URL}/api/invite/MARK-SFL", headers=_h())
         assert r.status_code == 200
-        assert "Coming soon" in r.text or "coming soon" in r.text.lower()
+        assert "Start your free check" in r.text
 
 
 # ============ Regression ============

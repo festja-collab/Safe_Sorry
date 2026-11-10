@@ -39,7 +39,7 @@ def build_presentation(*, app_name: str, adviser: dict) -> str:
 
         """<h2>The client journey</h2><div class="steps">
 <div><span>1</span>Sees an ad, a flyer or a personal invite</div>
-<div><span>2</span>Downloads the app and creates a free account</div>
+<div><span>2</span>Taps the link and creates a free account, nothing to download</div>
 <div><span>3</span>Answers 12 questions (about 5 minutes)</div>
 <div><span>4</span>Gets their report and family letter</div>
 <div><span>5</span>Ticks consent and asks for a call-back</div>
@@ -110,7 +110,7 @@ def build_presentation(*, app_name: str, adviser: dict) -> str:
             f"{name.split(' ')[0]} runs a personal lead-generation pilot",
             "Report back with real numbers: leads, clients, cost per lead",
             "Decide on next steps for SFL based on the results",
-        ]) + f"""<p class="small">{firm} (FRN {e(adviser["fca_number"])}) is an Appointed Representative of {e(adviser["principal_name"])}, which is authorised and regulated by the Financial Conduct Authority (FRN {e(adviser["principal_fca_number"])}). Internal presentation, not for client use.</p></div>""",
+        ]) + f"""<p class="small">{e(adviser["regulatory_status"])} Internal presentation, not for client use.</p></div>""",
     ]
     body = "".join(f'<section class="slide{" dark" if i in (0, len(slides) - 1) else ""}">{s}<div class="num">{i + 1} / {len(slides)}</div></section>'
                    for i, s in enumerate(slides))

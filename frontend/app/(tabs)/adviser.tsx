@@ -181,9 +181,7 @@ export default function Adviser() {
           <View style={[s.firm, { borderTopColor: adviser.brand_color || colors.surfaceInverse }]}>
             {adviser.logo_url ? <Image source={{ uri: logoUri(adviser.logo_url) }} style={s.logo} contentFit="contain" testID="adviser-firm-logo" /> : null}
             <Txt variant="small" style={{ textAlign: "center" }} testID="adviser-firm-info">
-              {adviser.principal_name
-                ? `${adviser.firm_name} (FRN ${adviser.fca_number}) is an Appointed Representative of ${adviser.principal_name}, which is authorised and regulated by the Financial Conduct Authority (FRN ${adviser.principal_fca_number}).`
-                : `${adviser.firm_name} is authorised and regulated by the Financial Conduct Authority (FRN ${adviser.fca_number}).`}
+              {adviser.regulatory_status}
             </Txt>
           </View>
         ) : null}

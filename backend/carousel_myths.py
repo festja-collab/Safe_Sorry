@@ -46,7 +46,7 @@ def end_slide(headline, extra=""):
     img.alpha_composite(logo, ((W - logo.width) // 2, 100))
     y = 100 + logo.height + 40
     y = text_block(img, headline, SERIF(80, "Bold"), y, WHITE, 0, T)
-    y = text_block(img, "Coming soon · follow to try it first", SANS(48), y + 20, GOLD, 0, T)
+    y = text_block(img, "Start your free check · link in bio", SANS(48), y + 20, GOLD, 0, T)
     y = text_block(img, (extra + " " if extra else "") + R.NOT_ADVICE_LINE, SANS(28, "Medium"), y + 50, MUTED, 0, T, maxw=880)
     text_block(img, R.AR_LINE, SANS(26, "Medium"), y + 14, MUTED, 0, T, maxw=880)
     return img

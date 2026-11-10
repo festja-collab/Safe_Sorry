@@ -63,7 +63,7 @@ def s_start(img, t):
     text_block(img, "But it’s rarely the whole picture.", SANS(58, "SemiBold"), y + 60, WHITE, 1.2, t)
 
 
-END = make_end("Know what you’re really covered for.", "Coming soon", "Follow to be first to try it")
+END = make_end("Know what you’re really covered for.")
 SCENES = [
     (0, 4.0, s_myth),
     (4.0, 8.6, fact(1, "It usually stops when you leave your job.", "New job, redundancy or going self-employed? The cover often goes with it.", "case")),

@@ -96,7 +96,7 @@ export function AdviserHome() {
             icon="share-2"
             onPress={() =>
               Share.share({
-                message: `See what your family would face if the worst happened, in 5 minutes. Download Safe > Sorry and use my adviser code ${user?.adviser_code} when you sign up. – ${user?.name}`,
+                message: `See what your family would face if the worst happened, in 5 minutes. It's free and there's nothing to download: ${process.env.EXPO_PUBLIC_BACKEND_URL}/api/start/${user?.adviser_code} – ${user?.name}`,
               })
             }
           />

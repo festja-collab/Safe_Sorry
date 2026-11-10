@@ -5,6 +5,8 @@ from pathlib import Path
 import imageio_ffmpeg
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
+from regulatory import SFL_STATUS
+
 W, H, FPS = 1080, 1920, 30
 NAVY, NAVY2, GOLD, WHITE, MUTED = (34, 51, 66), (24, 37, 49), (191, 155, 48), (255, 255, 255), (195, 201, 210)
 ROOT = Path(__file__).parent
@@ -67,8 +69,7 @@ def bg(h=H):
 
 
 BG = bg()
-AR_LINE = ("Secure for Life Wealth Management Ltd is an Appointed Representative of Rosemount Financial "
-           "Solutions (IFA) Limited, which is authorised and regulated by the Financial Conduct Authority.")
+AR_LINE = SFL_STATUS
 NOT_ADVICE_LINE = "Estimates only. This is not regulated advice. Figures are illustrative, based on 2026/27 rates."
 
 
@@ -172,7 +173,11 @@ def s_benefits(img, t):
         img.alpha_composite(layer)
 
 
-def make_end(headline="Know your number.", cta="Download Safe > Sorry · free", sub=None, small_y=1420):
+CTA = "Start your free check"
+CTA_SUB = "Link in bio · nothing to download"
+
+
+def make_end(headline="Know your number.", cta=CTA, sub=CTA_SUB, small_y=1420):
     def s_end(img, t):
         a = ease(t / 0.6)
         logo = LOGO.copy()

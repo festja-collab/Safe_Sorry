@@ -94,7 +94,7 @@ def s_check(img, t):
     text_block(img, "It takes 5 minutes to find out.", SANS(58, "SemiBold"), 1040, WHITE, 1.2, t)
 
 
-END = make_end("Check your protection in 5 minutes.", "Coming soon", "Follow to be first to try it")
+END = make_end("Check your protection in 5 minutes.")
 SCENES = [(0, 4.2, s_list), (4.2, 7.6, s_income), (7.6, 12.2, s_value), (12.2, 16.2, s_ifit), (16.2, 19.6, s_check), (19.6, 25.0, END)]
 
 if __name__ == "__main__":

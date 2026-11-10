@@ -26,7 +26,7 @@ const TEMPLATES = [
     id: "life-event",
     label: "Big life change",
     text: (n: string) =>
-      `Hi ${n}, congratulations on the big news! When life changes it's worth a quick check that your family would still be okay if something happened. This app walks you through it in five minutes.`,
+      `Hi ${n}, congratulations on the big news! When life changes it's worth a quick check that your family would still be okay if something happened. This free check walks you through it in five minutes, nothing to download.`,
   },
 ];
 

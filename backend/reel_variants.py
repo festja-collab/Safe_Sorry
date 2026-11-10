@@ -61,14 +61,14 @@ def a_app(img, t):
     place_phone(img, "r2", t, 0.3, y=520)
 
 
-award_end = make_end("Better safe than sorry.", "Coming soon", "Follow to be first to try it")
+award_end = make_end("Better safe than sorry.")
 
 # ---------------- 15s stories ----------------
-story_soon = make_end("Know your number.", "Link in bio", "Coming soon · free")
-story_live = make_end("Know your number.", "Link in bio", "Free on iPhone & Android")
+story_soon = make_end("Know your number.", "Link in bio", "Free · nothing to download")
+story_live = make_end("Know your number.", "Link in bio", "Start your free check")
 
 VARIANTS = {
-    "safe-sorry-coming-soon": (R.SCENES[:-1] + [(22.0, 27.0, make_end("Coming soon.", "Follow us to be first to try it", "Better safe than sorry."))],
+    "safe-sorry-coming-soon": (R.SCENES[:-1] + [(22.0, 27.0, make_end("Better safe than sorry."))],
                                "safe-sorry-coming-soon"),
     "safe-sorry-award-reel": ([(0, 3.8, a_award), (3.8, 7.8, a_mark), (7.8, 12.0, a_why), (12.0, 16.4, a_app), (16.4, 21.4, award_end)],
                               "safe-sorry-award-reel", 2.6),
@@ -141,8 +141,8 @@ def carousel():
     logo = R.LOGO.resize((440, int(R.LOGO.height * 440 / R.LOGO.width)))
     img.alpha_composite(logo, ((W - logo.width) // 2, 110))
     y = 110 + logo.height + 50
-    y = text_block(img, "Coming soon.", SERIF(90, "Bold"), y, WHITE, 0, T)
-    y = text_block(img, "Follow to be first to try it", SANS(54), y + 20, GOLD, 0, T)
+    y = text_block(img, "Start your free check.", SERIF(90, "Bold"), y, WHITE, 0, T)
+    y = text_block(img, "Link in bio · nothing to download", SANS(54), y + 20, GOLD, 0, T)
     y = text_block(img, R.NOT_ADVICE_LINE, SANS(28, "Medium"), y + 60, MUTED, 0, T, maxw=880)
     text_block(img, R.AR_LINE, SANS(26, "Medium"), y + 16, MUTED, 0, T, maxw=880)
     slides.append(img)

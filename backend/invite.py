@@ -1,40 +1,31 @@
 """Public invite landing page: the link an adviser sends to a client."""
 from html import escape
+from urllib.parse import quote
 
 
-def invite_page(*, app_name: str, adviser: dict, name: str, code_display: str, ad: bool, ios_url: str, android_url: str) -> str:
+def invite_page(*, app_name: str, adviser: dict, name: str, code_display: str, ad: bool) -> str:
     e = escape
     first = e(adviser["name"].split(" ")[0])
     hello = f"Hi {e(name)}," if name else "Hi,"
     photo = f'<img src="{e(adviser["photo_url"])}" alt="{e(adviser["name"])}" class="ph">' if adviser.get("photo_url", "").startswith("https://") else ""
     logo = f'<img src="{e(adviser["logo_url"])}" alt="{e(adviser.get("firm_name", ""))}" class="logo">' if adviser.get("logo_url", "").startswith("/api/") else ""
     hero_bg = adviser.get("brand_color") or "#223342"
-    stores = ""
-    if ios_url.startswith("https://"):
-        stores += f'<a class="btn" href="{e(ios_url)}">Download on the App Store</a>'
-    if android_url.startswith("https://"):
-        stores += f'<a class="btn" href="{e(android_url)}">Get it on Google Play</a>'
-    if not stores:
-        stores = '<p class="soon">Coming soon to the App Store and Google Play.</p>'
+    start = f'<a class="btn" id="start-check" href="/auth?mode=register&amp;code={quote(code_display)}">Start your free check</a>'
     if ad:
         body = (
-            "<p><b>Most families never ask the question. This app answers it — gently, in five minutes.</b></p>"
+            "<p><b>Most families never ask the question. This free check answers it, gently, in five minutes.</b></p>"
             "<ul style='line-height:1.8;font-size:16px'><li>See the month your family's money would run out</li>"
             "<li>Find out what the state would (and wouldn't) pay</li><li>Learn which gaps matter for your children's future</li>"
             "<li>Free, private, no sales calls unless you ask</li></ul>"
-            "<p>When you sign up, enter this code to get your report:</p>"
+            "<p>Nothing to download. Your code is filled in for you when you sign up:</p>"
         )
     else:
         body = (
             f"<p>{hello}</p><p>Thanks for chatting with me. If you'd like to see, in real terms, what your family would face "
-            "if you couldn't be there — and whether there's a gap worth closing — this app walks you through it in about five minutes.</p>"
-            "<p>When you sign up, enter my code so I can help if you want me to:</p>"
+            "if you couldn't be there, and whether there's a gap worth closing, this free check walks you through it in about five minutes.</p>"
+            "<p>Nothing to download. My code is filled in for you when you sign up, so I can help if you want me to:</p>"
         )
-    reg = ""
-    if adviser.get("firm_name"):
-        reg = f'{e(adviser["firm_name"])} (FRN {e(adviser["fca_number"])})'
-        if adviser.get("principal_name"):
-            reg += f' is an Appointed Representative of {e(adviser["principal_name"])}, which is authorised and regulated by the Financial Conduct Authority (FRN {e(adviser["principal_fca_number"])}).'
+    reg = e(adviser.get("regulatory_status", ""))
     return f"""<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{e(app_name)} — an invitation from {first}</title>
 <meta property="og:title" content="{e(app_name)} — would your family be okay?">
@@ -58,6 +49,6 @@ p{{line-height:1.6;font-size:17px}} .code{{font-family:Arial,sans-serif;font-siz
 <div class="who">{photo}<div><b>{e(adviser["name"])}</b><br><span class="small">{e(adviser.get("title", ""))}</span></div></div>
 {body}
 <div class="code">{e(code_display)}</div>
-{stores}
+{start}
 <p class="small">Estimates only, based on current UK tax and benefit rates. Not financial advice. {reg}</p>
 </div></div></body></html>"""

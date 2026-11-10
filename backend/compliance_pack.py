@@ -57,8 +57,7 @@ async def build_pack(*, app_name: str, adviser: dict, story_prompt: str, limits:
     story = SAMPLE_STORY
 
     e = escape
-    firm = f"{e(adviser['firm_name'])} (FRN {e(adviser['fca_number'])})"
-    principal = f"{e(adviser['principal_name'])} (FRN {e(adviser['principal_fca_number'])})"
+
 
     q_rows = [(str(i + 1), f"<b>{e(t)}</b><br><span class='muted'>{e(s)}</span>", e(a)) for i, (t, s, a) in enumerate(QUESTIONS)]
 
@@ -175,7 +174,7 @@ pre{{background:#F5F6F8;padding:14px;border-radius:8px;white-space:pre-wrap}} .l
 <button class="print" onclick="window.print()">Save as PDF / Print</button>
 <div class="cover"><div class="gold">COMPLIANCE REVIEW PACK</div><h1>{e(app_name)}</h1>
 <div>A mobile app that helps families understand their protection gap</div><br>
-<div>Prepared for: {firm}, an Appointed Representative of {principal}</div>
+<div>Prepared for: {e(adviser['regulatory_status'])}</div>
 <div>Adviser: {e(adviser['name'])}, {e(adviser.get('title', 'Senior Protection Specialist'))}</div>
 <div>Generated: {now} · Status: <b>pre-launch, not publicly released</b></div></div>
 
@@ -189,8 +188,7 @@ pre{{background:#F5F6F8;padding:14px;border-radius:8px;white-space:pre-wrap}} .l
 
 <h2>2. How to review the app</h2>
 <ol>
-<li><b>Recommended — private test builds:</b> once deployed, the app can be sent to reviewers through Apple <b>TestFlight</b> (iPhone) or as an Android test file, without appearing in any app store.</li>
-<li><b>Alternative — Expo Go:</b> install the free “Expo Go” app, then scan the QR code the adviser shares from the deployed app.</li>
+<li><b>Recommended — open the website:</b> Safe &gt; Sorry runs in any phone or computer browser, so there is nothing to install. Open the link the adviser shares, or scan the QR code on the “Try it” page with a normal phone camera.</li>
 <li>Create an account with your own email address (password of at least 10 characters), complete a family check with sample figures, then read the full report, the Learn guides and the Adviser screen.</li>
 <li>Please do not submit real personal details during review. Call-back requests are emailed to the adviser.</li>
 </ol>
@@ -215,7 +213,7 @@ pre{{background:#F5F6F8;padding:14px;border-radius:8px;white-space:pre-wrap}} .l
 <li>Before the check and on every report: “Please note this is not regulated advice. This Application will only provide you with an AI produced letter setting out any Life Cover requirements you may have. When you have the meeting with the adviser, we will then be able to advise you fully, based on your circumstances.”</li><li>With every letter: “This letter has been produced by an AI tool, based on the information you entered. Assumptions have been made based on today’s figures, thresholds and state benefits, which will change in future. The figures quoted in the letter should be used for illustrative purposes only.”</li><li>Report footer: “Figures based on 2026/27 UK tax and benefit rates.”</li>
 <li>Timeline marker: “The money runs out” — “Everything below this line, your family faces without you — and without money.” Later milestones are labelled “Unfunded”.</li>
 <li>Adviser screen: “Hi, I'm {e(adviser['name'].split(' ')[0])}.” / “{e(adviser['bio'])}” / “Let's close the gap together.” / “Fifteen minutes on the phone is often all it takes…”</li>
-<li>Regulatory status shown: “{firm} is an Appointed Representative of {principal}, which is authorised and regulated by the Financial Conduct Authority.”</li>
+<li>Regulatory status shown: “{e(adviser['regulatory_status'])}”</li>
 <li>Call-back confirmation: “Taking this step is the hardest part, and you've done it.”</li></ul>
 <h3>4.5 Learn guides (full text)</h3>{articles_html}
 

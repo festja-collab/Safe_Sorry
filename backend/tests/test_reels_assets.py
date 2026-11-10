@@ -107,8 +107,8 @@ except Exception:
 
 END_EXPECTATIONS = {
     # last frame (just before end) → should contain these snippets
-    "safe-sorry-coming-soon.mp4": ["Coming soon", "Follow", "not regulated advice", "Appointed Representative"],
-    "safe-sorry-award-reel.mp4": ["Coming soon", "not regulated advice", "Appointed Representative"],
+    "safe-sorry-coming-soon.mp4": ["Start your free check", "not regulated advice", "trading style"],
+    "safe-sorry-award-reel.mp4": ["Start your free check", "not regulated advice", "trading style"],
     "safe-sorry-story-coming-soon.mp4": ["Link in bio", "not regulated advice", "Appointed Representative"],
     "safe-sorry-story-launch.mp4": ["Link in bio", "not regulated advice", "Appointed Representative"],
 }
@@ -189,7 +189,7 @@ class TestCarousel:
     def test_slide6_coming_soon_and_compliance(self):
         r = requests.get(f"{FILE}/safe-sorry-carousel-6.jpg", timeout=30)
         text = pytesseract.image_to_string(Image.open(io.BytesIO(r.content))).lower()
-        for s in ("coming soon", "not regulated advice", "appointed representative"):
+        for s in ("start your free check", "not regulated advice", "trading style"):
             assert s in text, f"'{s}' missing from carousel-6; got:\n{text!r}"
 
     def test_zip_download_attachment(self):
@@ -213,7 +213,7 @@ class TestReelsPage:
         assert "safe-sorry-carousel.zip?download=1" in body
         # titles for each video card
         for title in (
-            "Launch reel", "Coming soon reel", "Award reel",
-            "Story (15s) · coming soon", "Story (15s) · launch day",
+            "Main reel", "Intro reel", "Award reel",
+            "Story (15s) · free check", "Story (15s) · start your free check",
         ):
             assert title in body, f"title '{title}' missing"

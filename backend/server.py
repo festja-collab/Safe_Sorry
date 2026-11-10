@@ -35,6 +35,7 @@ from logo_concepts import concept_sheet  # noqa: E402
 from try_page import try_page  # noqa: E402
 from desk import desk_page  # noqa: E402
 from posting_plan import posting_plan  # noqa: E402
+from regulatory import regulatory_status  # noqa: E402
 from reels import router as reels_router  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from privacy import PRIVACY_VERSION, privacy_sections  # noqa: E402
@@ -112,6 +113,7 @@ class Firm(BaseDocument):
     fca_number: str = ""
     principal_name: str = ""
     principal_fca_number: str = ""
+    trading_name: str = ""
     brand_color: str = ""
     logo_path: str = ""
     logo_content_type: str = ""
@@ -347,6 +349,8 @@ async def adviser_profile(a: User) -> dict:
         "calendly_url": a.calendly_url, "email": a.lead_email or a.email, "adviser_code": a.adviser_code,
         "firm_name": f.name if f else "", "fca_number": f.fca_number if f else "",
         "principal_name": f.principal_name if f else "", "principal_fca_number": f.principal_fca_number if f else "",
+        "trading_name": f.trading_name if f else "",
+        "regulatory_status": regulatory_status({**f.model_dump(), "firm_name": f.name}) if f else "",
     }
 
 
@@ -704,8 +708,7 @@ async def invite_landing(code: str, name: str = ""):
     if not adviser:
         raise HTTPException(404, "Invite not found")
     return invite_page(app_name=APP_NAME, adviser=await adviser_profile(adviser), name=name.strip()[:40],
-                       code_display=f"{adviser.adviser_code}-INV", ad=False,
-                       ios_url=os.environ.get("IOS_APP_URL", ""), android_url=os.environ.get("ANDROID_APP_URL", ""))
+                       code_display=f"{adviser.adviser_code}-INV", ad=False)
 
 
 @api.get("/start", response_class=HTMLResponse)
@@ -716,8 +719,7 @@ async def ad_landing(code: str = "", src: str = ""):
         raise HTTPException(404, "Page not found")
     tag = re.sub(r"[^A-Z0-9]", "", src.upper())[:12]
     return invite_page(app_name=APP_NAME, adviser=await adviser_profile(adviser), name="",
-                       code_display=f"{adviser.adviser_code}-{tag}" if tag else adviser.adviser_code, ad=True,
-                       ios_url=os.environ.get("IOS_APP_URL", ""), android_url=os.environ.get("ANDROID_APP_URL", ""))
+                       code_display=f"{adviser.adviser_code}-{tag}" if tag else adviser.adviser_code, ad=True)
 
 
 @api.get("/articles/{slug}")
@@ -1203,6 +1205,8 @@ async def seed_default_adviser():
         await db.users.update_one({"email": email}, {"$setOnInsert": seed.to_mongo()}, upsert=True)
     except Exception as e:  # concurrent worker won the race
         logger.info(f"Adviser seed skipped: {e}")
+    # Safe > Sorry is a trading style of the default firm (agreed with Rosemount)
+    await db.firms.update_one({"code": os.environ["FIRM_CODE"], "trading_name": {"$exists": False}}, {"$set": {"trading_name": APP_NAME}})
     # One-off migration: link pre-existing clients and leads to the default adviser
     mark = await db.users.find_one({"email": email})
     await db.users.update_many({"role": {"$exists": False}}, {"$set": {"role": "client"}})

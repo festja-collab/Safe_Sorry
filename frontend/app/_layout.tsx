@@ -1,6 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import Head from "expo-router/head";
 import { StatusBar } from "expo-status-bar";
 import { LogBox } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -23,6 +24,13 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
+      <Head>
+        <title>Safe &gt; Sorry · Free family protection check</title>
+        <meta name="description" content="A free 5-minute check that shows what your family would face if the worst happened. Estimates only, not regulated advice." />
+        <meta name="theme-color" content="#223342" />
+        <meta property="og:title" content="Safe > Sorry · Would your family be okay?" />
+        <meta property="og:description" content="A free 5-minute family protection check. Nothing to download." />
+      </Head>
       <QueryClientProvider client={queryClient}>
         <KeyboardProvider>
           <AuthProvider>

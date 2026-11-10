@@ -125,3 +125,9 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - New reels: safe-sorry-myth-young-reel, safe-sorry-myth-state-reel (reel_myths2.py, ambient track), listed on /api/reels.
 - /api/posting-plan: 4-week Instagram plan (captions, hashtags, disclosure, bio, Rosemount sign-off boxes) — posting_plan.py.
 - Tests protect Mark's real account (tests/conftest.py snapshot/restore). Desk tests use desk.adviser@example.com.
+
+## Update (Nov 2026) — Mobile-first website + trading-style wording
+- Safe > Sorry agreed as a trading style of SFL. Single source: backend/regulatory.py (regulatory_status(firm), SFL_STATUS). Firm.trading_name (SFL seeded "Safe > Sorry"); adviser payload has trading_name + regulatory_status, used by app adviser screen, privacy, invite/start pages, presentation, compliance pack, reels, carousels, posting plan.
+- Wording: "Safe > Sorry is a trading style of Secure for Life Wealth Management Ltd (FRN 912517), which is an Appointed Representative of Rosemount Financial Solutions (IFA) Limited (FRN 535515), which is authorised and regulated by the Financial Conduct Authority."
+- Website-ready: invite/start pages have "Start your free check" → /auth?mode=register&code=… (no store buttons); share message has link; +html meta tags. User will use Emergent "Add Web App" to deploy web.
+- All reels/carousels re-rendered with "Start your free check · link in bio" endings (render_all.sh; music in backend/music/).
