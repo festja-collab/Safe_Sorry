@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api, Assessment, Gap, gbp, Impact, Milestone, Story } from "@/src/api";
 import { Button, ErrorState, IconBadge, Loading, Notice, Txt } from "@/src/components/ui";
+import { HomeScreenTip } from "@/src/components/home-screen-tip";
 import { AI_LETTER, NOT_ADVICE } from "@/src/compliance-text";
 import { makeStyles, radius, spacing, ThemeColors, useTheme } from "@/src/theme";
 
@@ -320,6 +321,7 @@ export default function Report() {
               onPress={() => router.push({ pathname: "/(tabs)/adviser", params: { assessment: q.data.id } })}
             />
           </View>
+          <HomeScreenTip />
           <Txt variant="small" style={{ textAlign: "center" }} testID="report-tax-year">
             Figures based on {r.tax_year ?? "2026/27"} UK tax and benefit rates. State benefits shown depend on eligibility and must be claimed.
           </Txt>

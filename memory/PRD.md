@@ -136,3 +136,4 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - PWA: frontend/public/manifest.json + icon-192/512/maskable + apple-touch-icon; linked via expo-router Head in _layout.tsx.
 - Pinned "About Safe > Sorry" 3-slide post (about_post.py → safe-sorry-about-1..3.jpg + zip), listed on /api/reels.
 - /api/desk lead detail: "Mark as New / Contacted / Closed" buttons (PATCH /api/adviser/leads/{id}).
+- Report: dismissible 'Keep your report close' home-screen tip (mobile web only, iOS Safari steps / Android install prompt), src/components/home-screen-tip.tsx.
