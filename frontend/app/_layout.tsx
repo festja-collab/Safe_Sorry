@@ -30,6 +30,12 @@ export default function RootLayout() {
         <meta name="theme-color" content="#223342" />
         <meta property="og:title" content="Safe > Sorry · Would your family be okay?" />
         <meta property="og:description" content="A free 5-minute family protection check. Nothing to download." />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Safe > Sorry" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </Head>
       <QueryClientProvider client={queryClient}>
         <KeyboardProvider>

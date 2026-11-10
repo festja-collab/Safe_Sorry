@@ -58,9 +58,10 @@ async def reels_page():
         cards += f"""<div class="card"><h2>{escape(titles.get(v[:-4], v))}</h2><video src="/api/reels/file/{escape(v)}" controls playsinline preload="metadata"{poster}></video>
 <a class="btn" href="/api/reels/file/{escape(v)}?download=1" download>⬇ Download video</a>
 {f'<a class="btn ghost" href="/api/reels/file/{escape(cover)}?download=1" download>⬇ Download cover image</a>' if poster else ''}</div>"""
-    carousels = [("safe-sorry-myth-young", "Myth-buster carousel · “I’m young and healthy, I don’t need it”"),
+    carousels = [("safe-sorry-about", "Pinned “About Safe > Sorry” post (3 slides) · pin to the top of your profile"),
+                 ("safe-sorry-myth-young", "Myth-buster carousel · “I’m young and healthy, I don’t need it”"),
                  ("safe-sorry-myth-state", "Myth-buster carousel · “The state will look after us”"),
-                 ("safe-sorry-carousel", "Launch carousel (6 slides) · post before launch")]
+                 ("safe-sorry-carousel", "How it works carousel (6 slides)")]
     for prefix, title in carousels:
         slides = sorted(REELS.glob(f"{prefix}-[0-9].jpg"), key=lambda p: int(p.stem.rsplit("-", 1)[1]))
         if not slides:

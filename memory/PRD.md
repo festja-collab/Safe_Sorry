@@ -131,3 +131,8 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - Wording: "Safe > Sorry is a trading style of Secure for Life Wealth Management Ltd (FRN 912517), which is an Appointed Representative of Rosemount Financial Solutions (IFA) Limited (FRN 535515), which is authorised and regulated by the Financial Conduct Authority."
 - Website-ready: invite/start pages have "Start your free check" → /auth?mode=register&code=… (no store buttons); share message has link; +html meta tags. User will use Emergent "Add Web App" to deploy web.
 - All reels/carousels re-rendered with "Start your free check · link in bio" endings (render_all.sh; music in backend/music/).
+
+## Update (Nov 2026) — Home-screen icon, About post, desk status
+- PWA: frontend/public/manifest.json + icon-192/512/maskable + apple-touch-icon; linked via expo-router Head in _layout.tsx.
+- Pinned "About Safe > Sorry" 3-slide post (about_post.py → safe-sorry-about-1..3.jpg + zip), listed on /api/reels.
+- /api/desk lead detail: "Mark as New / Contacted / Closed" buttons (PATCH /api/adviser/leads/{id}).

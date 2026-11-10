@@ -95,18 +95,36 @@ function showList(){
     app.appendChild(h("p",{"class":"muted",text:"The CRM file has contact details and consent only, ready to import into Greenlight."}));
   }).catch(function(e){if(e.message!=="401"){app.innerHTML="";app.appendChild(h("p",{"class":"err",text:e.message}));}});}
 
+function statusBar(l){
+  var msg=h("span",{"class":"muted",id:"status-msg"});
+  var wrap=h("div",{"class":"bar",id:"status-bar",style:"margin:18px 0 0"},h("strong",{text:"Mark as:"}));
+  function paint(){Array.prototype.forEach.call(wrap.querySelectorAll("button"),function(b){
+    var on=b.getAttribute("data-status")===l.status;b.className=on?"gold":"sec";b.setAttribute("aria-pressed",on?"true":"false");});}
+  ["new","contacted","closed"].forEach(function(s){
+    wrap.appendChild(h("button",{"data-status":s,id:"status-"+s,onclick:function(){
+      if(s===l.status)return;var btns=wrap.querySelectorAll("button");Array.prototype.forEach.call(btns,function(b){b.disabled=true;});
+      msg.className="muted";msg.textContent="Saving…";
+      fetch("/api/adviser/leads/"+l.id,{method:"PATCH",headers:{"Authorization":"Bearer "+sess().token,"Content-Type":"application/json"},body:JSON.stringify({status:s})})
+      .then(function(r){if(r.status===401){logout("Your session has ended. Please log in again.");throw new Error("401");}if(!r.ok)throw new Error("Couldn't save. Please try again.");
+        l.status=s;var p=document.getElementById("lead-status");p.innerHTML="";p.appendChild(pill(s));msg.className="ok";msg.textContent="Saved: "+LABEL[s];paint();})
+      .catch(function(e){if(e.message!=="401"){msg.className="err";msg.textContent=e.message;}})
+      .finally(function(){Array.prototype.forEach.call(btns,function(b){b.disabled=false;});});
+    },text:LABEL[s]}));});
+  wrap.appendChild(msg);paint();return wrap;}
+
 function showLead(id){
   app.innerHTML="";app.appendChild(h("p",{"class":"muted",text:"Loading lead…"}));
   api("GET","/api/adviser/leads/"+id).then(function(l){app.innerHTML="";
     var back=h("a",{"class":"link",href:"#",id:"back-to-list",text:"← All leads"});
     var top=h("div",{"class":"card",id:"lead-detail"},
-      h("div",{"class":"bar"},h("h1",{id:"lead-name",text:l.name}),pill(l.status)),
+      h("div",{"class":"bar"},h("h1",{id:"lead-name",text:l.name}),h("span",{id:"lead-status"},pill(l.status))),
       h("p",{"class":"muted",text:"Requested "+when(l.created_at)+(l.preferred_time?" · Prefers "+l.preferred_time.toLowerCase():"")}),
       h("p",{"class":"muted",text:"Came from: "+l.source_label+(l.source_code?" (code "+l.source_code+")":"")+(l.heard_from?" · Heard via "+l.heard_from:"")}),
       h("div",{"class":"grid"},
         h("div",{},h("div",{"class":"muted",text:"Phone"}),h("a",{"class":"link",id:"lead-phone",href:"tel:"+(l.phone||"").replace(/[^0-9+]/g,""),text:l.phone})),
         h("div",{},h("div",{"class":"muted",text:"Email"}),h("a",{"class":"link",id:"lead-email",href:"mailto:"+l.email,text:l.email}))),
-      l.message?h("div",{},h("label",{text:"Their message"}),h("p",{id:"lead-message",text:l.message})):null);
+      l.message?h("div",{},h("label",{text:"Their message"}),h("p",{id:"lead-message",text:l.message})):null,
+      statusBar(l));
     app.appendChild(h("p",{},back));app.appendChild(top);
     var a=l.assessment,card=h("div",{"class":"card",id:"lead-family"});
     if(!a){card.appendChild(h("p",{"class":"muted",text:"This family hadn't completed a check when they asked for a call."}));}
@@ -129,7 +147,7 @@ function showLead(id){
       card.appendChild(h("p",{"class":"muted",text:"“Has” for life cover includes life insurance, death in service and savings."}));
       if(i.worry)card.appendChild(h("p",{"class":"muted",text:"Biggest worry: "+i.worry}));}
     app.appendChild(card);
-    app.appendChild(h("p",{"class":"muted",text:"To update the status or action a data-deletion request, open this lead in the app."}));
+    app.appendChild(h("p",{"class":"muted",text:"To action a data-deletion request, open this lead in the app."}));
   }).catch(function(e){if(e.message!=="401"){app.innerHTML="";app.appendChild(h("p",{},h("a",{"class":"link",href:"#",text:"← All leads"})));
     app.appendChild(h("div",{"class":"card"},h("p",{"class":"err",id:"lead-error",text:e.message==="Lead not found"?"We couldn't find that lead on your account.":e.message})));}});}
 

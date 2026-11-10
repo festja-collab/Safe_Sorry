@@ -1,0 +1,16 @@
+{
+  "name": "Safe > Sorry · Family protection check",
+  "short_name": "Safe > Sorry",
+  "description": "A free 5-minute check that shows what your family would face if the worst happened.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#223342",
+  "theme_color": "#223342",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
