@@ -45,11 +45,11 @@ async def reel_file(name: str, request: Request, download: int = 0):
 @router.get("/reels", response_class=HTMLResponse)
 async def reels_page():
     order = ["safe-sorry-insure-reel", "safe-sorry-myth-reel", "safe-sorry-myth-young-reel", "safe-sorry-myth-state-reel", "safe-sorry-launch-reel", "safe-sorry-coming-soon", "safe-sorry-award-reel", "safe-sorry-story-coming-soon", "safe-sorry-story-launch"]
-    titles = {"safe-sorry-myth-reel": "Myth-buster reel (27s) · death in service",
-              "safe-sorry-myth-young-reel": "Myth-buster reel (27s) · “I’m young and healthy”",
-              "safe-sorry-myth-state-reel": "Myth-buster reel (27s) · “The state will look after us”", "safe-sorry-insure-reel": "What do we insure? reel (25s) · awareness", "safe-sorry-launch-reel": "Main reel (27s) · start your free check", "safe-sorry-coming-soon": "Intro reel (27s) · start your free check",
-              "safe-sorry-award-reel": "Award reel (21s) · builds trust", "safe-sorry-story-coming-soon": "Story (15s) · free check, link in bio",
-              "safe-sorry-story-launch": "Story (15s) · start your free check"}
+    titles = {"safe-sorry-myth-reel": "Myth-buster reel (43s) · death in service",
+              "safe-sorry-myth-young-reel": "Myth-buster reel (43s) · “I’m young and healthy”",
+              "safe-sorry-myth-state-reel": "Myth-buster reel (43s) · “The state will look after us”", "safe-sorry-insure-reel": "What do we insure? reel (40s) · awareness", "safe-sorry-launch-reel": "Main reel (43s) · start your free check", "safe-sorry-coming-soon": "Intro reel (43s) · start your free check",
+              "safe-sorry-award-reel": "Award reel (34s) · builds trust", "safe-sorry-story-coming-soon": "Story (24s) · free check, link in bio",
+              "safe-sorry-story-launch": "Story (24s) · start your free check"}
     vids = sorted((p.name for p in REELS.glob("*.mp4")), key=lambda n: order.index(n[:-4]) if n[:-4] in order else 99)
     cards = ""
     for v in vids:

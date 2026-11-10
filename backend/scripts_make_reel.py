@@ -217,7 +217,12 @@ def frame(t, scenes=None):
     return img.convert("RGB")
 
 
+SLOW = 1.6  # every scene is held 1.6x longer than first designed, so there's time to read; animations keep their speed
+
+
 def render(scenes, name, cover_t=1.9):
+    scenes = [(s * SLOW, e * SLOW, fn) for s, e, fn in scenes]
+    cover_t *= SLOW
     ff = imageio_ffmpeg.get_ffmpeg_exe()
     out = OUT / f"{name}.mp4"
     p = subprocess.Popen([ff, "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",

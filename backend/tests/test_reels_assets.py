@@ -214,6 +214,6 @@ class TestReelsPage:
         # titles for each video card
         for title in (
             "Main reel", "Intro reel", "Award reel",
-            "Story (15s) · free check", "Story (15s) · start your free check",
+            "Story (24s) · free check", "Story (24s) · start your free check",
         ):
             assert title in body, f"title '{title}' missing"

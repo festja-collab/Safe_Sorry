@@ -9,17 +9,17 @@ TAGS_CORE = "#lifeinsurance #incomeprotection #criticalillnesscover #protectiona
 
 # (week, day, format, asset title, asset file, caption, extra hashtags)
 POSTS = [
-    (1, "Mon", "Reel", "Intro reel (27s)", "safe-sorry-coming-soon.mp4",
+    (1, "Mon", "Reel", "Intro reel (43s)", "safe-sorry-coming-soon.mp4",
      "Most of us know what our phone is insured for. Far fewer know what would happen to our family's money if we "
      "couldn't work, or weren't here.\n\nSafe > Sorry is a free family check that shows you, in plain English, in about "
      "5 minutes. Nothing to download. Link in bio.", "#freecheck #familyfirst #moneytips"),
-    (1, "Wed", "Reel", "What do we insure? (25s)", "safe-sorry-insure-reel.mp4",
+    (1, "Wed", "Reel", "What do we insure? (40s)", "safe-sorry-insure-reel.mp4",
      "Phone. Car. Holiday. Even the dog.\n\nWe insure the things we'd hate to lose. So what about the income your "
      "family relies on? Worth a thought this week.", "#insurance #moneytips #financialwellbeing"),
     (1, "Fri", "Carousel (6)", "Myth: “I’m young and healthy”", "safe-sorry-myth-young.zip",
      "Myth: \"I'm young and healthy, I don't need cover.\"\n\nSwipe for the facts. Not everyone needs cover, but it's "
      "worth knowing whether you do. Save this for later.", "#mythbusting #firsttimebuyer #youngfamilies"),
-    (2, "Mon", "Reel", "Myth: death in service (27s)", "safe-sorry-myth-reel.mp4",
+    (2, "Mon", "Reel", "Myth: death in service (43s)", "safe-sorry-myth-reel.mp4",
      "\"I've got death in service at work, so I'm covered.\"\n\nIt's a great start. But it usually stops when you leave "
      "your job, and it only pays out if you die. Do you know what yours would actually pay?", "#deathinservice #employeebenefits #mythbusting"),
     (2, "Wed", "Carousel (6)", "Carousel · what the free check does", "safe-sorry-carousel.zip",
@@ -28,20 +28,20 @@ POSTS = [
     (2, "Fri", "Carousel (6)", "Myth: “The state will look after us”", "safe-sorry-myth-state.zip",
      "Myth: \"If something happened, the state would look after us.\"\n\nState support helps, but the amounts can be a "
      "surprise. Swipe for the 2026/27 figures. Eligibility rules apply.", "#statebenefits #sickpay #mythbusting"),
-    (3, "Mon", "Reel", "Myth: “I’m young and healthy” (27s)", "safe-sorry-myth-young-reel.mp4",
+    (3, "Mon", "Reel", "Myth: “I’m young and healthy” (43s)", "safe-sorry-myth-young-reel.mp4",
      "The best time to check your cover is usually before you need it.\n\nYoung, healthy and someone relies on your "
      "income? It's worth 5 minutes to see where you stand.", "#mythbusting #newparents #youngfamilies"),
-    (3, "Wed", "Reel", "Myth: “The state will look after us” (27s)", "safe-sorry-myth-state-reel.mp4",
+    (3, "Wed", "Reel", "Myth: “The state will look after us” (43s)", "safe-sorry-myth-state-reel.mp4",
      "Statutory Sick Pay is £123.25 a week in 2026/27. Could your household run on that?\n\nKnowing the numbers is the "
      "first step. Eligibility rules apply.", "#statebenefits #sickpay #financialwellbeing"),
-    (3, "Fri", "Story (15s)", "Story · free check, link in bio", "safe-sorry-story-coming-soon.mp4",
+    (3, "Fri", "Story (24s)", "Story · free check, link in bio", "safe-sorry-story-coming-soon.mp4",
      "(Story, no caption needed.) Add the link sticker to the landing page.", ""),
-    (4, "Mon", "Reel", "Main reel (27s)", "safe-sorry-launch-reel.mp4",
+    (4, "Mon", "Reel", "Main reel (43s)", "safe-sorry-launch-reel.mp4",
      "How long would your family's money last if you couldn't work, or weren't here?\n\nSafe > Sorry is a free family "
      "check that shows you, and what you could do about it. Nothing to download. Link in bio.", "#freecheck #familyfirst"),
-    (4, "Tue", "Story (15s)", "Story · start your free check", "safe-sorry-story-launch.mp4",
+    (4, "Tue", "Story (24s)", "Story · start your free check", "safe-sorry-story-launch.mp4",
      "(Story, no caption needed.) Add the link sticker. Reshare Monday's reel to Stories the same day.", ""),
-    (4, "Fri", "Reel", "Award reel (21s)", "safe-sorry-award-reel.mp4",
+    (4, "Fri", "Reel", "Award reel (34s)", "safe-sorry-award-reel.mp4",
      "Built by Mark Turner, Protection Adviser of the Year 2026 at the Next Intelligence awards.\n\nThe aim is simple: "
      "help families see their safety net clearly, then talk it through with a real person if they'd like to.",
      "#protectionadviseroftheyear #awardwinning #financialadvice"),

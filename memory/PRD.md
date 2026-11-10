@@ -138,3 +138,4 @@ UK protection gap assessment mobile app. Gap assessment questionnaire, personali
 - /api/desk lead detail: "Mark as New / Contacted / Closed" buttons (PATCH /api/adviser/leads/{id}).
 - Report: dismissible 'Keep your report close' home-screen tip (mobile web only, iOS Safari steps / Android install prompt), src/components/home-screen-tip.tsx.
 - Report reminder: one automatic email ~30 days after a check (reminders.py loop, hourly), link back to report, unsubscribe link (separate signing key), privacy notice updated (version not bumped). Only checks created from now (have 'origin').
+- Reels slowed: scripts_make_reel.SLOW=1.6 (scene holds 1.6x, animation speed unchanged). Reels now 43s/40s/34s, stories 24s. Launch music crossfaded x2 (music/launch-long.mp3).
